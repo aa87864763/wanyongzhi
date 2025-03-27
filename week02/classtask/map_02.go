@@ -7,11 +7,11 @@ func count(str string) {
 	for _, x := range str {
 		stat[x] += 1
 	}
-	var maxNum rune = 0
+	var maxNum int = 0
 	var maxStr rune
 	for key, value := range stat {
-		if value > int(maxNum) {
-			maxNum = rune(value)
+		if value > maxNum {
+			maxNum = value
 			maxStr = key
 		}
 	}
