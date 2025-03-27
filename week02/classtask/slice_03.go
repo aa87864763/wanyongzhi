@@ -5,7 +5,7 @@ import "fmt"
 func unique(slice []int) []int {
 
 	temp := make(map[int]bool)
-	uniqueSlice := []int{}
+	var uniqueSlice []int
 	for _, x := range slice {
 		if !temp[x] {
 			temp[x] = true
