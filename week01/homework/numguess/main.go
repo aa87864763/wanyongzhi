@@ -69,7 +69,7 @@ func guess(t int, roundNumber int) (bool, []string) {
 
 // 打开game.txt并写入内容
 func writeFile(gameData []string) {
-	file, err := os.OpenFile("../game.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644) //在当前目录(week01/homework/.)运行numguess.go时在同目录创建game.txt
+	file, err := os.OpenFile("../game.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatalf("无法打开文件:%v", err)
 	}
