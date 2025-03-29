@@ -19,14 +19,15 @@ type Game struct {
 }
 
 type Round struct {
-	RoundNum  int    `json:"轮次编号"`
-	Result    string `json:"本轮结果"`
-	RandomNum int    `json:"生成数字"`
-	GuessNum  []int  `json:"猜测数字"`
-	UseTime   string `json:"本轮耗时"`
+	RoundNum    int    `json:"轮次编号"`
+	SelectLevel string `json:"选择难度"`
+	Result      string `json:"本轮结果"`
+	RandomNum   int    `json:"生成数字"`
+	GuessNum    []int  `json:"猜测数字"`
+	UseTime     string `json:"本轮耗时"`
 }
 
-func guess(t int, roundNumber int) (bool, Round) {
+func guess(t, roundNumber int, level string) (bool, Round) {
 	var i int
 
 	randomNum := rand.Intn(100) + 1
@@ -35,9 +36,10 @@ func guess(t int, roundNumber int) (bool, Round) {
 
 	//实例化轮次结构体
 	round := Round{
-		RoundNum:  roundNumber,
-		GuessNum:  []int{},
-		RandomNum: randomNum,
+		RoundNum:    roundNumber,
+		SelectLevel: level,
+		GuessNum:    []int{},
+		RandomNum:   randomNum,
 	}
 
 	answer := "错误"
@@ -123,9 +125,9 @@ func main() {
 	fmt.Println("2.您可以选择难度级别（简单、中等、困难），不同难度对应不同的猜测机会")
 	fmt.Println("3.请输入您的猜测\n")
 	fmt.Println("请选择难度级别（简单/中等/困难）：")
-	fmt.Println("1.简单（3次机会）")
+	fmt.Println("1.简单（10次机会）")
 	fmt.Println("2.中等（5次机会）")
-	fmt.Println("3.困难（10次机会）\n")
+	fmt.Println("3.困难（3次机会）\n")
 
 	n := 0
 	gameStart := time.Now()
@@ -144,20 +146,24 @@ func main() {
 		var num int
 		fmt.Scan(&num)
 		var t int
+		var level string
 		switch num { // 选择难度
 		case 1:
-			t = 3
+			t = 10
+			level = "简单"
 		case 2:
 			t = 5
+			level = "中等"
 		case 3:
-			t = 10
+			t = 3
+			level = "困难"
 		default:
 			fmt.Println("输入错误请重新输入！")
 			n--
 			continue
 		}
 
-		flag, round := guess(t, n) //返回游戏意愿和轮次结构体
+		flag, round := guess(t, n, level) //返回游戏意愿和轮次结构体
 		game.GameCount++
 		game.RoundMsg = append(game.RoundMsg, round) //更新游戏总结构体中的数据
 
