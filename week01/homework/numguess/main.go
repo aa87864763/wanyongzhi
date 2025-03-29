@@ -15,30 +15,29 @@ type Game struct {
 	StartTime string  `json:"开始时间"`
 	EndTime   string  `json:"结束时间"`
 	UseTime   string  `json:"消耗时间"`
-	Rounds    []Round `json:"轮次信息"`
+	RoundMsg  []Round `json:"轮次信息"`
 }
 
 type Round struct {
-	RoundNumber  int    `json:"轮次编号"`
-	Result       string `json:"本轮结果"`
-	RandomNumber int    `json:"生成数字"`
-	GuessNumbers []int  `json:"猜测数字"`
-	UseTime      string `json:"本轮耗时"`
+	RoundNum  int    `json:"轮次编号"`
+	Result    string `json:"本轮结果"`
+	RandomNum int    `json:"生成数字"`
+	GuessNum  []int  `json:"猜测数字"`
+	UseTime   string `json:"本轮耗时"`
 }
 
-// 进行猜测
 func guess(t int, roundNumber int) (bool, Round) {
 	var i int
 
 	randomNum := rand.Intn(100) + 1
-	fmt.Println(randomNum)
 	fmt.Println("开始游戏：\n")
 	RoundStartTime := time.Now() // 轮次开始时间
 
+	//实例化轮次结构体
 	round := Round{
-		RoundNumber:  roundNumber,
-		GuessNumbers: []int{},
-		RandomNumber: randomNum,
+		RoundNum:  roundNumber,
+		GuessNum:  []int{},
+		RandomNum: randomNum,
 	}
 
 	answer := "错误"
@@ -47,7 +46,7 @@ func guess(t int, roundNumber int) (bool, Round) {
 		fmt.Scan(&i)
 		temp := i
 
-		round.GuessNumbers = append(round.GuessNumbers, temp)
+		round.GuessNum = append(round.GuessNum, temp) //添加该轮次猜测的数字
 
 		if temp == randomNum {
 			answer = "正确"
@@ -62,7 +61,8 @@ func guess(t int, roundNumber int) (bool, Round) {
 		}
 	}
 
-	RoundEndTime := time.Now() // 轮次结束时间
+	//更新轮次结构体内容
+	RoundEndTime := time.Now()
 	RoundUseTime := RoundEndTime.Sub(RoundStartTime)
 	RoundUseTimeStr := RoundUseTime.String()
 	round.Result = answer
@@ -98,8 +98,9 @@ func writeFile(game Game) {
 	if err != nil {
 		log.Fatalf("无法序列化数据:%v", err)
 	}
-	scanner := bufio.NewScanner(file)
 
+	//根据文件数据行数判断是第几次游戏
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		temp += 1
 	}
@@ -107,8 +108,8 @@ func writeFile(game Game) {
 		log.Fatalf("无法读取文件:%v", err)
 	}
 
-	data := fmt.Sprintf("第%v次游戏：%s\n", temp, string(gameJson))
 	// 写入文件
+	data := fmt.Sprintf("第%v次游戏：%s\n", temp, string(gameJson))
 	_, err = file.WriteString(data)
 	if err != nil {
 		log.Fatalf("无法写入文件:%v", err)
@@ -130,10 +131,11 @@ func main() {
 	gameStart := time.Now()
 	gameStartTime := gameStart.Format("2006-01-02 15:04:05")
 
+	//实例化游戏总结构体
 	game := Game{
 		GameCount: 0,
 		StartTime: gameStartTime,
-		Rounds:    []Round{},
+		RoundMsg:  []Round{},
 	}
 
 	for {
@@ -155,10 +157,11 @@ func main() {
 			continue
 		}
 
-		flag, round := guess(t, n)
+		flag, round := guess(t, n) //返回游戏意愿和轮次结构体
 		game.GameCount++
-		game.Rounds = append(game.Rounds, round)
+		game.RoundMsg = append(game.RoundMsg, round) //更新游戏总结构体中的数据
 
+		//如果不继续游戏那么就将内容写入文件
 		if !flag {
 			gameEnd := time.Now()
 			game.EndTime = gameEnd.Format("2006-01-02 15:04:05")
