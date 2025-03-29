@@ -47,7 +47,7 @@ func guess(t, roundNumber int, level string) (bool, Round) {
 	for x := 0; x < t; x++ { // 进行猜测游戏
 		fmt.Printf("第%d次猜测，请输入您的数字(1 - 100)：\n", x+1)
 		fmt.Scan(&input)
-		temp, _ := strconv.Atoi(input) //防止用户输入非数字字符造成bug
+		temp, _ := strconv.Atoi(input) //防止用户输入非数字造成bug
 		if temp <= 100 && temp >= 1 {
 			round.GuessNum = append(round.GuessNum, temp)
 		} else {
@@ -149,7 +149,7 @@ func main() {
 		fmt.Print("输入选择：")
 		var input string
 		fmt.Scan(&input)
-		num, err := strconv.Atoi(input) //防止用户输入非数字字符造成bug
+		num, err := strconv.Atoi(input) //防止用户输入非数字造成bug
 		if err != nil || (num != 1 && num != 2 && num != 3) {
 			n--
 			fmt.Println("输入错误，请重新输入！")
