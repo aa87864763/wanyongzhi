@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -28,7 +29,7 @@ type Round struct {
 }
 
 func guess(t, roundNumber int, level string) (bool, Round) {
-	var i int
+	var input string
 
 	randomNum := rand.Intn(100) + 1
 	fmt.Println("开始游戏：\n")
@@ -45,17 +46,20 @@ func guess(t, roundNumber int, level string) (bool, Round) {
 	answer := "错误"
 	for x := 0; x < t; x++ { // 进行猜测游戏
 		fmt.Printf("第%d次猜测，请输入您的数字(1 - 100)：\n", x+1)
-		fmt.Scan(&i)
-		temp := i
-
-		round.GuessNum = append(round.GuessNum, temp) //添加该轮次猜测的数字
+		fmt.Scan(&input)
+		temp, _ := strconv.Atoi(input) //防止用户输入非数字字符造成bug
+		if temp <= 100 && temp >= 1 {
+			round.GuessNum = append(round.GuessNum, temp)
+		} else {
+			round.GuessNum = append(round.GuessNum, -1) //如果输入的结果不在范围内就将猜测数字定为-1作为错误输入
+			fmt.Println("请输入(1 - 100)的数字。\n")
+			continue
+		}
 
 		if temp == randomNum {
 			answer = "正确"
 			fmt.Printf("恭喜您猜对了！您在第%d次猜测中成功。\n", x+1)
 			break
-		} else if temp > 100 || temp < 1 { // 处理猜测数字不在范围内的情况
-			fmt.Println("请输入(1 - 100)的数字。\n")
 		} else if temp > randomNum {
 			fmt.Println("您猜的数字大了。\n")
 		} else {
@@ -143,8 +147,14 @@ func main() {
 	for {
 		n++
 		fmt.Print("输入选择：")
-		var num int
-		fmt.Scan(&num)
+		var input string
+		fmt.Scan(&input)
+		num, err := strconv.Atoi(input) //防止用户输入非数字字符造成bug
+		if err != nil || (num != 1 && num != 2 && num != 3) {
+			n--
+			fmt.Println("输入错误，请重新输入！")
+			continue
+		}
 		var t int
 		var level string
 		switch num { // 选择难度
@@ -157,10 +167,6 @@ func main() {
 		case 3:
 			t = 3
 			level = "困难"
-		default:
-			fmt.Println("输入错误请重新输入！")
-			n--
-			continue
 		}
 
 		flag, round := guess(t, n, level) //返回游戏意愿和轮次结构体
