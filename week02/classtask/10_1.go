@@ -15,7 +15,7 @@ type Data struct {
 	Complete bool   `json:"完成情况"`
 }
 
-var filePath string = "./data.json"
+var filePath string = "./10_1.json"
 
 // 阅读整个data.json，返回一个Data结构体的切片(包含文件中的所有任务)
 func readTasks() []Data {
