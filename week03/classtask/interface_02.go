@@ -67,6 +67,15 @@ func main() {
 	}
 
 	for _, animal := range animals {
-		fmt.Printf("%s 说: %s, %s 移动方式: %s\n", animal.(interface{ Name() string }).Name(), animal.Speak(), animal.(interface{ Name() string }).Name(), animal.Move())
+		var name string
+		switch a := animal.(type) {
+		case Dog:
+			name = a.Name
+		case Cat:
+			name = a.Name
+		case Bird:
+			name = a.Name
+		}
+		fmt.Printf("%s 说: %s, %s 移动方式: %s\n", name, animal.Speak(), name, animal.Move())
 	}
 }
