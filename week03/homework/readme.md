@@ -117,10 +117,10 @@ tx, err := db.Begin()
 ```
 
 **5.**调用`getWord(tx, wordData.Word)`传入事务对象与数据库单词内容，判断是否存在单词并返回单词ID。
-  - if 存在：返回单词ID
-  - if 不存在：插入该单词并返回ID
+  - 存在：返回单词ID
+  - 不存在：插入该单词并返回ID
 
-**6.**调用`insertTranslations(tx, wordID, wordData.Translations)`传入事务对象，word_id和Translations切片进行数据库插入操作，调用`insertPhrases(tx, wordID, wordData.Phrases)`传入事务对象，word_id和Phrases切片进行数据库插入操作。其中使用了Prepare对SQ;语句进行了预编译。
+**6.**调用`insertTranslations(tx, wordID, wordData.Translations)`传入事务对象，word_id和Translations切片进行数据库插入操作，调用`insertPhrases(tx, wordID, wordData.Phrases)`传入事务对象，word_id和Phrases切片进行数据库插入操作。其中使用了Prepare对SQL语句进行了预编译。
 
 **7.**for循环是否结束
   - 结束：打印处理当前文件花费时间同时打印总花费时间
