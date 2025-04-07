@@ -5,13 +5,13 @@
 其中具体的表构建sql语句为：
 
 ```sql
-('''
+'''
 CREATE TABLE IF NOT EXISTS words (
     id INTEGER PRIMARY KEY,
     word TEXT UNIQUE NOT NULL
 )
-''')
-('''
+'''
+'''
 CREATE TABLE IF NOT EXISTS translations (
     id INTEGER PRIMARY KEY,
     word_id INTEGER NOT NULL,
@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS translations (
     FOREIGN KEY (word_id) REFERENCES words (id),
     UNIQUE(word_id, translation, type) ON CONFLICT IGNORE
 )
-''')
-('''
+'''
+'''
 CREATE TABLE IF NOT EXISTS phrases (
     id INTEGER PRIMARY KEY,
     word_id INTEGER NOT NULL,
@@ -30,6 +30,5 @@ CREATE TABLE IF NOT EXISTS phrases (
     FOREIGN KEY (word_id) REFERENCES words (id),
     UNIQUE(word_id, phrase, translation) ON CONFLICT IGNORE
 )
-''')
-
+'''
 ```
