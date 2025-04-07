@@ -161,7 +161,7 @@ func main() {
 	defer func() {
 		timeEnd := time.Now()
 		duration := timeEnd.Sub(timeStart)
-		fmt.Printf("处理所有文件共耗时：%v", duration.Seconds())
+		fmt.Printf("处理所有文件共花费时间：%v秒", duration.Seconds())
 	}()
 
 	// 分批处理每个JSON 文件
@@ -172,7 +172,7 @@ func main() {
 		}
 		timeEnd := time.Now()
 		duration := timeEnd.Sub(timeStart)
-		fmt.Printf("第%v个Json文件插入花费时间: %v\n", x+1, duration.Seconds())
+		fmt.Printf("处理第%v个Json文件花费时间: %v秒\n", x+1, duration.Seconds())
 	}
 
 }

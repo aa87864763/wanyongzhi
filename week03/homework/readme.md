@@ -64,11 +64,11 @@ CREATE TABLE IF NOT EXISTS phrases (
 
 以下是完整的 Go 代码实现，分为几个主要步骤。
 
-1. 进行数据库连接。
+**1.**进行数据库连接。
 
 `db, err := openDatabase("./data.db")`
 
-2. 定义结构体
+**2.**定义结构体
 
 本文选择将Json文件反序列为对应的嵌套结构体。
 
@@ -100,7 +100,7 @@ type Phrase struct {
 }
 ```
 
-3. 打开Json文件进行反序列化并存入[]WordData格式的结构体切片wordList中。(原准备使用Goroutine进行并发操作，但经过实际运行发现花费的时间会更多，可能原因是SQLite是单线程的，使用并发编程也只是将操作进行穿行而不是并行，反而会因为Goroutine争抢数据库操作增加了等待时间)
+**3.**打开Json文件进行反序列化并存入[]WordData格式的结构体切片wordList中。(原准备使用Goroutine进行并发操作，但经过实际运行发现花费的时间会更多，可能原因是SQLite是单线程的，使用并发编程也只是将操作进行穿行而不是并行，反而会因为Goroutine争抢数据库操作增加了等待时间)
 
 ```go
 var wordList []WordData
@@ -109,22 +109,22 @@ var wordList []WordData
 	}
 ```
 
-4. 使用事务进行批量操作以节省时间，采取的batchsize=1000。
+**4.**使用事务进行批量操作以节省时间，采取的batchsize=1000。
 
 ```go
 batchSize := 1000
 tx, err := db.Begin()
 ```
 
-5. 调用`getWord(tx, wordData.Word)`传入事务对象与数据库单词内容，判断是否存在单词并返回单词ID。
+**5.**调用`getWord(tx, wordData.Word)`传入事务对象与数据库单词内容，判断是否存在单词并返回单词ID。
   - if 存在：返回单词ID
   - if 不存在：插入该单词并返回ID
 
-6. 调用`insertTranslations(tx, wordID, wordData.Translations)`传入事务对象，word_id和Translations切片进行数据库插入操作，调用`insertPhrases(tx, wordID, wordData.Phrases)`传入事务对象，word_id和Phrases切片进行数据库插入操作。其中使用了Prepare对SQ;语句进行了预编译。
+**6.**调用`insertTranslations(tx, wordID, wordData.Translations)`传入事务对象，word_id和Translations切片进行数据库插入操作，调用`insertPhrases(tx, wordID, wordData.Phrases)`传入事务对象，word_id和Phrases切片进行数据库插入操作。其中使用了Prepare对SQ;语句进行了预编译。
 
-7. for循环是否结束
-  - if 结束：打印处理当前文件花费时间同时打印总花费时间
-  - if 没结束：打印处理当前文件花费时间同时返回步骤3
+**7.**for循环是否结束
+  - 结束：打印处理当前文件花费时间同时打印总花费时间
+  - 没结束：打印处理当前文件花费时间同时返回步骤3
 
 # 处理思路
 
@@ -136,3 +136,23 @@ tx, err := db.Begin()
 **消耗时间较长**
 
 一开始使用逐条插入的方法，处理一个文件的时间一般在2m20s左右(4-CET6-顺序.json)。因为代码语言执行速度很快，所以意识到大部分的时间都用于进行数据库操作，发现可以使用事务进行批量操作以及使用Prepare进行SQL语句预编译，之后一个文件的处理时间降到了0.2s~0.5s左右(根据文件大小浮动)。
+
+# 数据
+
+采取两个Json文件进行测试(3-CET4-顺序.json和4-CET6-顺序.json)。其运行结果为：
+
+```
+PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go build
+PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go run .
+处理第1个Json文件花费时间: 0.3498206秒
+处理第2个Json文件花费时间: 0.2287369秒
+处理所有文件共花费时间：0.5785575秒
+```
+
+其中得到的具体数据数量为：
+
+```word：6664个```
+
+```translation 和 type：14251个```
+
+```phrase 和 translation：48693个```
