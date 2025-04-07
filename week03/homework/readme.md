@@ -100,13 +100,13 @@ type Phrase struct {
 }
 ```
 
-**3.**打开Json文件进行反序列化并存入[]WordData格式的结构体切片wordList中。(原准备使用Goroutine进行并发操作，但经过实际运行发现花费的时间会更多，可能原因是SQLite是单线程的，使用并发编程也只是将操作进行穿行而不是并行，反而会因为Goroutine争抢数据库操作增加了等待时间)
+**3.**打开Json文件进行反序列化并存入[]WordData格式的结构体切片wordList中。(原准备使用Goroutine进行并发操作，但经过实际运行发现花费的时间会更多，可能原因是SQLite是单线程的，使用并发编程也只是将操作进行串行而不是并行，反而会因为Goroutine争抢数据库操作增加了等待时间)
 
 ```go
 var wordList []WordData
-	if err := json.Unmarshal(data, &wordList); err != nil {
-		return fmt.Errorf("无法将Json文件%s反序列化：%w", filePath, err)
-	}
+if err := json.Unmarshal(data, &wordList); err != nil {
+	return fmt.Errorf("无法将Json文件%s反序列化：%w", filePath, err)
+}
 ```
 
 **4.**使用事务进行批量操作以节省时间，采取的batchsize=1000。
@@ -121,6 +121,10 @@ tx, err := db.Begin()
   - 不存在：插入该单词并返回ID
 
 **6.**调用`insertTranslations(tx, wordID, wordData.Translations)`传入事务对象，word_id和Translations切片进行数据库插入操作，调用`insertPhrases(tx, wordID, wordData.Phrases)`传入事务对象，word_id和Phrases切片进行数据库插入操作。其中使用了Prepare对SQL语句进行了预编译。
+
+`stmt, _ := tx.Prepare("INSERT OR IGNORE INTO translations (word_id, translation, type) VALUES (?, ?, ?)")`
+
+`stmt, _ := tx.Prepare("INSERT OR IGNORE INTO phrases (word_id, phrase, translation) VALUES (?, ?, ?)")`
 
 **7.**for循环是否结束
   - 结束：打印处理当前文件花费时间同时打印总花费时间
