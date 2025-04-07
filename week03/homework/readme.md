@@ -1,8 +1,13 @@
-此目录存放本周课后作业，可以在此文件添加作业设计思路和流程图等
+# 数据库
 
-本次作业根据Json文件中的格式将数据库(data.db)中的表格式划分为word(id,word);translations(id,word_id,translation,type);phrases(id,word_id,phrase.translation)。
+本次作业根据Json文件中的格式将数据库(data.db)中的表格式划分为：
+word(id,word)
 
-其中具体的表构建sql语句为：
+translations(id,word_id,translation,type)
+
+phrases(id,word_id,phrase.translation)
+
+其中关于表构建的sql语句为：
 
 ```sql
 '''
@@ -32,3 +37,4 @@ CREATE TABLE IF NOT EXISTS phrases (
 )
 '''
 ```
+
