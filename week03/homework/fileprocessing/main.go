@@ -31,15 +31,57 @@ type Phrase struct {
 }
 
 // 数据库连接
-func openDatabase(dbPath string) (*sql.DB, error) {
+func initDatabase(dbPath string) *sql.DB {
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("打开数据库：%s失败: %w", dbPath, err)
+		log.Fatalf("打开数据库：%s失败", dbPath)
 	}
-	return db, nil
+
+	// 创建words表
+	createTable(db, "words", `
+	CREATE TABLE IF NOT EXISTS words (
+		id INTEGER PRIMARY KEY,
+		word TEXT UNIQUE NOT NULL
+	)`)
+
+	// 创建translations表
+	createTable(db, "translations", `
+	CREATE TABLE IF NOT EXISTS translations (
+		id INTEGER PRIMARY KEY,
+		word_id INTEGER NOT NULL,
+		translation TEXT NOT NULL,
+		type TEXT NOT NULL,
+		FOREIGN KEY (word_id) REFERENCES words (id),
+		UNIQUE(word_id, translation, type) ON CONFLICT IGNORE
+	)`)
+
+	// 创建phrases表
+	createTable(db, "phrases", `
+	CREATE TABLE IF NOT EXISTS phrases (
+		id INTEGER PRIMARY KEY,
+		word_id INTEGER NOT NULL,
+		phrase TEXT NOT NULL,
+		translation TEXT NOT NULL,
+		FOREIGN KEY (word_id) REFERENCES words (id),
+		UNIQUE(word_id, phrase, translation) ON CONFLICT IGNORE
+	)`)
+	return db
 }
 
-// 获取单词 ID（如果不存在则插入）
+func createTable(db *sql.DB, tableName, createSQL string) {
+	var count int
+	db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = ?", tableName).Scan(&count)
+
+	if count == 0 {
+		// 表不存在，执行创建新表
+		_, err := db.Exec(createSQL)
+		if err != nil {
+			log.Fatalf("无法创建%s表", tableName)
+		}
+	}
+}
+
+// 获取单词ID(如果不存在则插入)
 func getWord(tx *sql.Tx, word string) int {
 	var wordID int
 	err := tx.QueryRow("SELECT id FROM words WHERE word = ?", word).Scan(&wordID)
@@ -59,7 +101,7 @@ func getWord(tx *sql.Tx, word string) int {
 	return wordID
 }
 
-// 插入翻译数据
+// 插入Translations数据
 func insertTranslations(tx *sql.Tx, wordID int, translations []Translation) error {
 	//使用prepare对插入Translations的SQL语句进行预编译
 	stmt, _ := tx.Prepare("INSERT OR IGNORE INTO translations (word_id, translation, type) VALUES (?, ?, ?)")
@@ -73,6 +115,7 @@ func insertTranslations(tx *sql.Tx, wordID int, translations []Translation) erro
 	return nil
 }
 
+// 插入Phrases数据
 func insertPhrases(tx *sql.Tx, wordID int, phrases []Phrase) error {
 	//使用prepare对插入Phrases的SQL语句进行预编译
 	stmt, _ := tx.Prepare("INSERT OR IGNORE INTO phrases (word_id, phrase, translation) VALUES (?, ?, ?)")
@@ -86,14 +129,14 @@ func insertPhrases(tx *sql.Tx, wordID int, phrases []Phrase) error {
 	return nil
 }
 
-// 处理单个JSON 文件
+// 处理单个Json文件
 func processJson(db *sql.DB, filePath string) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("无法读取文件%s：%w", filePath, err)
 	}
 
-	// 将json文件转换为结构体并存入wordList中
+	// 将Json文件转换为结构体并存入wordList中
 	var wordList []WordData
 	if err := json.Unmarshal(data, &wordList); err != nil {
 		return fmt.Errorf("无法将Json文件%s反序列化：%w", filePath, err)
@@ -129,7 +172,6 @@ func processJson(db *sql.DB, filePath string) error {
 				return fmt.Errorf("无法提交事务：%w", err)
 			}
 
-			// 开始新的事务
 			tx, err = db.Begin()
 			if err != nil {
 				return fmt.Errorf("无法开始事务：%w", err)
@@ -141,10 +183,7 @@ func processJson(db *sql.DB, filePath string) error {
 }
 
 func main() {
-	db, err := openDatabase("./data.db")
-	if err != nil {
-		log.Fatalf("无法打开数据库: %v", err)
-	}
+	db := initDatabase("./data.db")
 	defer db.Close()
 
 	jsonFiles := []string{
