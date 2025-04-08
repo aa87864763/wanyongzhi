@@ -100,7 +100,7 @@ type Phrase struct {
 }
 ```
 
-**3.**打开Json文件进行反序列化并存入[]WordData格式的结构体切片wordList中。(原准备使用Goroutine进行并发操作，但经过实际运行发现花费的时间会更多，可能原因是SQLite是单线程的，使用并发编程也只是将操作进行串行而不是并行，反而会因为Goroutine争抢数据库操作增加了等待时间)
+**3.**打开Json文件进行反序列化并存入`[]WordData`格式的结构体切片`wordList`中。(原准备使用`Goroutine`进行并发操作，但经过实际运行发现花费的时间会更多，可能原因是SQLite是单线程的，使用并发编程也只是将操作进行串行而不是并行，反而会因为`Goroutine`争抢数据库操作增加了等待时间)
 
 ```go
 var wordList []WordData
@@ -122,11 +122,12 @@ tx, err := db.Begin()
 
 **6.**调用`insertTranslations(tx, wordID, wordData.Translations)`传入事务对象，word_id和Translations切片进行数据库插入操作，调用`insertPhrases(tx, wordID, wordData.Phrases)`传入事务对象，word_id和Phrases切片进行数据库插入操作。其中使用了Prepare对SQL语句进行了预编译。
 
-`stmt, _ := tx.Prepare("INSERT OR IGNORE INTO translations (word_id, translation, type) VALUES (?, ?, ?)")`
+```go
+stmt, _ := tx.Prepare("INSERT OR IGNORE INTO translations (word_id, translation, type) VALUES (?, ?, ?)")
+stmt, _ := tx.Prepare("INSERT OR IGNORE INTO phrases (word_id, phrase, translation) VALUES (?, ?, ?)")
+```
 
-`stmt, _ := tx.Prepare("INSERT OR IGNORE INTO phrases (word_id, phrase, translation) VALUES (?, ?, ?)")`
-
-**7.**for循环是否结束
+**7.**for循环是否结束。
   - 结束：打印处理当前文件花费时间同时打印总花费时间
   - 没结束：打印处理当前文件花费时间同时返回步骤3
 
@@ -145,7 +146,7 @@ tx, err := db.Begin()
 
 采取两个Json文件进行测试(3-CET4-顺序.json和4-CET6-顺序.json)。其运行结果为：
 
-```
+```bash
 PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go build
 PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go run .
 处理第1个Json文件花费时间: 0.3498206秒
@@ -155,8 +156,28 @@ PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go run .
 
 其中得到的具体数据数量为：
 
-```word：6664个```
+```
+word：6664个
+translation 和 type：14251个
+phrase 和 translation：48693个
+```
 
-```translation 和 type：14251个```
+# 更新
 
-```phrase 和 translation：48693个```
+将`openDatabase()`更改为`initDatabase()`。更改原因是因为不确定测试的时候要不要将数据库彻底清空，然后等执行代码的时候重新构建表，还是跟原来一样只是清空表内数据但不删除表。
+
+`initDatabase()`对比原来的`openDatabase()`增加了`createTable()`用于判断words表、translations表和phrases表是否存在，若存在则不执行操作，若不存在则按照SQL语句创建表。
+
+在原来处理数据冗余问题上产生了分歧。不确定是保证(word_id, phrase, translation)和(word_id, translation, type)的组合值唯一，还是保证 (phrase, translation)和(translation, type)的组合值唯一。两种情况对于数据冗余的处理情况不一样。
+
+**1.**保证3个组合值唯一的情况是允许存在一样的(phrase, translation)和(translation, type)，但前提是其对应的word_id不一样，这种情况说明有多个相同翻译和短语对应着不同的word。
+
+**2.**保证2个组合值唯一的情况是不允许存在一样的(phrase, translation)和(translation, type)，不管对应的word_id是不是一样的，统一按照冗余数据进行处理。
+
+我在代码中是按照第一种情况处理数据冗余的。但如果按照第二种情况进行处理，那么得到的具体数据数量为：
+
+```
+word：6664个
+translation 和 type：13989个
+phrase 和 translation：40735个
+```
