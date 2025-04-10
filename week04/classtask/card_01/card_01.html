@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人名片</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f9;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            text-align: center;
+            padding: 30px;
+            overflow: hidden;
+        }
+        .card img {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 20px;
+        }
+        .card h1 {
+            margin: 0;
+            font-size: 32px;
+            color: #333333;
+        }
+        .card h2 {
+            margin: 10px 0 20px;
+            font-size: 22px;
+            color: #666666;
+        }
+        .card p {
+            font-size: 18px;
+            color: #777777;
+            line-height: 1.5;
+        }
+        .copy-btn {
+            background-color: #666666;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background-color 0.3s ease;
+        }
+        .copy-btn:hover {
+            background-color: #666666;
+        }
+        .copied {
+            color: black;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="./photo.jpg" alt="头像">
+        <h1>万永智</h1>
+        <h2>专业：电子信息(计算机技术)</h2>
+        <h2>方向：知识图谱与大模型</h2>
+        <p>热爱编程，喜欢学习新技术!</p>
+        <p>电话：13396049531
+            <button class="copy-btn" onclick="Copy('13396049531', 'phone')">复制</button>
+            <span id="phone-copied" class="copied"></span>
+        </p>
+        <p>邮箱：1819298649@qq.com
+            <button class="copy-btn" onclick="Copy('1819298649@qq.com', 'email')">复制</button>
+            <span id="email-copied" class="copied"></span>
+        </p>
+    </div>
+    <script>
+        function Copy(text, type) {
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = text;
+            document.body.appendChild(tempTextArea);
+
+            tempTextArea.select();
+            document.execCommand("copy");
+
+            document.body.removeChild(tempTextArea);
+
+            const copiedSpan = document.getElementById(`${type}-copied`);
+            copiedSpan.textContent = "已复制！";
+
+            setTimeout(() => {
+                copiedSpan.textContent = "";
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
