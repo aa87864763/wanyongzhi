@@ -43,7 +43,7 @@ func guess(t, roundNumber int, level string) (bool, Round) {
 		RandomNum:   randomNum,
 	}
 
-	answer := "错误"
+	answer := "失败"
 	for x := 0; x < t; x++ { // 进行猜测游戏
 		fmt.Printf("第%d次猜测，请输入您的数字(1 - 100)：\n", x+1)
 		fmt.Scan(&input)
@@ -57,7 +57,7 @@ func guess(t, roundNumber int, level string) (bool, Round) {
 		}
 
 		if temp == randomNum {
-			answer = "正确"
+			answer = "成功"
 			fmt.Printf("恭喜您猜对了！您在第%d次猜测中成功。\n", x+1)
 			break
 		} else if temp > randomNum {
@@ -67,6 +67,7 @@ func guess(t, roundNumber int, level string) (bool, Round) {
 		}
 	}
 
+	fmt.Printf("游戏结束！您最后的游戏结果为：%s\n", answer)
 	//更新轮次结构体内容
 	RoundEndTime := time.Now()
 	RoundUseTime := RoundEndTime.Sub(RoundStartTime)
@@ -75,12 +76,12 @@ func guess(t, roundNumber int, level string) (bool, Round) {
 	round.UseTime = RoundUseTimeStr
 
 	var c string
-	fmt.Println("是否继续游玩?(Y/N)") // 判断是否要继续游玩
+	fmt.Println("是否继续游玩?继续请输入：Y/y，退出请输入N/n") // 判断是否要继续游玩
 	for {
 		fmt.Scan(&c)
-		if c == "Y" {
+		if c == "Y" || c == "y" {
 			return true, round // 继续游玩的话返回 true
-		} else if c == "N" {
+		} else if c == "N" || c == "n" {
 			return false, round // 不继续游玩的话返回 false
 		} else {
 			fmt.Println("输入错误请重新输入！")
@@ -128,10 +129,6 @@ func main() {
 	fmt.Println("1.计算机将在1到100之间随机选择一个数字")
 	fmt.Println("2.您可以选择难度级别（简单、中等、困难），不同难度对应不同的猜测机会")
 	fmt.Println("3.请输入您的猜测\n")
-	fmt.Println("请选择难度级别（简单/中等/困难）：")
-	fmt.Println("1.简单（10次机会）")
-	fmt.Println("2.中等（5次机会）")
-	fmt.Println("3.困难（3次机会）\n")
 
 	n := 0
 	gameStart := time.Now()
@@ -146,6 +143,10 @@ func main() {
 
 	for {
 		n++
+		fmt.Println("请选择难度级别（简单/中等/困难）：")
+		fmt.Println("1.简单（10次机会）")
+		fmt.Println("2.中等（5次机会）")
+		fmt.Println("3.困难（3次机会）\n")
 		fmt.Print("输入选择：")
 		var input string
 		fmt.Scan(&input)
