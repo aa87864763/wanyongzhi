@@ -54,7 +54,44 @@ func initDatabase(dbPath string) *sql.DB {
 		log.Fatalf("无法设置WAL模式：%v", err)
 	}
 
+	createTable(db, "words", `
+	CREATE TABLE IF NOT EXISTS words (
+		id INTEGER PRIMARY KEY,
+		word TEXT UNIQUE NOT NULL
+	)`)
+
+	createTable(db, "translations", `
+	CREATE TABLE IF NOT EXISTS translations (
+		id INTEGER PRIMARY KEY,
+		word_id INTEGER NOT NULL,
+		translation TEXT NOT NULL,
+		type TEXT NOT NULL,
+		FOREIGN KEY (word_id) REFERENCES words (id),
+		UNIQUE(word_id, translation, type) ON CONFLICT IGNORE
+	)`)
+
+	createTable(db, "phrases", `
+	CREATE TABLE IF NOT EXISTS phrases (
+		id INTEGER PRIMARY KEY,
+		word_id INTEGER NOT NULL,
+		phrase TEXT NOT NULL,
+		translation TEXT NOT NULL,
+		FOREIGN KEY (word_id) REFERENCES words (id),
+		UNIQUE(word_id, phrase, translation) ON CONFLICT IGNORE
+	)`)
 	return db
+}
+
+func createTable(db *sql.DB, tableName, createSQL string) {
+	var count int
+	db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = ?", tableName).Scan(&count)
+
+	if count == 0 {
+		_, err := db.Exec(createSQL)
+		if err != nil {
+			log.Fatalf("无法创建%s表", tableName)
+		}
+	}
 }
 
 // 获取单词ID(如果不存在则插入)
