@@ -41,14 +41,14 @@ var (
 	insertPhrasesStmt      *sql.Stmt
 )
 
-// 初始化数据库（保持不变）
+// 初始化数据库
 func initDatabase(dbPath string) *sql.DB {
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatalf("打开数据库：%s失败", dbPath)
 	}
 
-	// 设置 WAL 模式以提高并发性能
+	// 设置WAL模式
 	_, err = db.Exec("PRAGMA journal_mode=WAL;")
 	if err != nil {
 		log.Fatalf("无法设置WAL模式：%v", err)
@@ -94,7 +94,7 @@ func createTable(db *sql.DB, tableName, createSQL string) {
 	}
 }
 
-// 获取单词ID(如果不存在则插入)
+// 插入word并获取word_id
 func getWord(tx *sql.Tx, word string) int {
 	var wordID int
 	err := tx.QueryRow("SELECT id FROM words WHERE word = ?", word).Scan(&wordID)
@@ -138,7 +138,7 @@ func insertPhrases(tx *sql.Tx, wordID int, phrases []Phrase) error {
 	return nil
 }
 
-// 读取JSON文件并反解析为结构体
+// 读取Json文件并反解析为结构体
 func readFile(filePath string, wg *sync.WaitGroup, wordLists chan<- []WordData) {
 	defer wg.Done()
 
@@ -185,7 +185,7 @@ func writeDatabase(db *sql.DB, wordLists <-chan []WordData, done chan<- struct{}
 				log.Fatalf("无法为单词'%s'插入Phrases：%v", wordData.Word, err)
 			}
 
-			// 每 batchSize 条数据提交一次事务
+			// 每1000条数据提交一次事务
 			if (i+1)%batchSize == 0 {
 				if err := tx.Commit(); err != nil {
 					log.Fatalf("无法提交事务：%v", err)
@@ -208,6 +208,7 @@ func main() {
 	db := initDatabase("./data.db")
 	defer db.Close()
 
+	// 进行预编译
 	var err error
 	insertWordStmt, err = db.Prepare("INSERT OR IGNORE INTO words (word) VALUES (?)")
 	if err != nil {
