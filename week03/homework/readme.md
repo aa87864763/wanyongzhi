@@ -100,7 +100,7 @@ type Phrase struct {
 }
 ```
 
-**3.**打开Json文件进行反序列化并存入`[]WordData`格式的结构体切片`wordList`中。(原准备使用`Goroutine`进行并发操作，但经过实际运行发现花费的时间会更多，可能原因是SQLite是单线程的，使用并发编程也只是将操作进行串行而不是并行，反而会因为`Goroutine`争抢数据库操作增加了等待时间)
+**3.**调用`processJson(db, filepath)`对Json文件进行反序列化并存入`[]WordData`格式的结构体切片`wordList`中。(原准备使用`Goroutine`进行并发操作，但经过实际运行发现花费的时间会更多，可能原因是SQLite是单线程的，使用并发编程也只是将操作进行串行而不是并行，反而会因为`Goroutine`争抢数据库操作增加了等待时间)
 
 ```go
 var wordList []WordData
@@ -117,6 +117,7 @@ tx, err := db.Begin()
 ```
 
 **5.**调用`getWord(tx, wordData.Word)`传入事务对象与数据库单词内容，判断是否存在单词并返回单词ID。
+
   - 存在：返回单词ID
   - 不存在：插入该单词并返回ID
 
@@ -181,3 +182,70 @@ word：6664个
 translation 和 type：13989个
 phrase 和 translation：40735个
 ```
+
+# 更新
+
+在第四周课上听到老师说用协程处理后将代码进行了更新。
+
+新增了使用协程对文件读取，然后将写入数据库的操作也用协程进行。这样相比于前面没使用协程的流程(先读再写)到现在变为了边读边写，并且将SQL语句预编译设为了全局变量，一共优化了大约0.1s左右。
+
+现在的流程变更为：
+
+1. 进行数据库连接。
+
+2. 定义结构体。
+
+3. 预编译SQL插入语句。
+
+   ```go
+   var (
+   	insertWordStmt         *sql.Stmt
+   	insertTranslationsStmt *sql.Stmt
+   	insertPhrasesStmt      *sql.Stmt
+   )
+   
+   insertWordStmt, err = db.Prepare("INSERT OR IGNORE INTO words (word) VALUES (?)")
+   insertTranslationsStmt, err = db.Prepare("INSERT OR IGNORE INTO translations (word_id, translation, type) VALUES (?, ?, ?)")
+   insertPhrasesStmt, err = db.Prepare("INSERT OR IGNORE INTO phrases (word_id, phrase, translation) VALUES (?, ?, ?)")
+   ```
+
+4. 定义wordLists管道进行协程之间的数据交互。
+
+   ```go
+   wordLists := make(chan []WordData, len(jsonFiles))
+   ```
+
+5. 定义done管道判断后续写入操作是否结束。
+
+   ````go
+   done := make(chan struct{})
+   ````
+
+6. 并行读取Json文件，同时并行进行写入数据库操作。
+
+   在这块儿内容中，将原`processJson(db, filepath)`拆分为了`readFile(filePath, &wg, wordLists)`和`writeDatabase(db, wordLists, done)`，原本将读文件和写文件操作合并在一起串行运行，现在使用协程并行运行。
+
+7. 等待Json文件读取完成后关闭管道wordList，等待数据库写入完成关闭管道done。
+
+**流程图为：**
+
+![示例图片](./graph.jpg)
+
+现在运行速度在0.45~0.47s不等,运行结果为：
+
+```bash
+PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go build 
+PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go run .
+处理所有文件共花费时间：0.4653274秒
+```
+
+# 更新
+
+发现使用sqlite3驱动："github.com/mattn/go-sqlite3" 有C库依赖，在缺少gcc编译器的情况下无法运行，于是使用了纯Go语言搭建的驱动："modernc.org/sqlite"。但是性能下降了很多，运行时间从0.46秒提升到了0.75秒。
+
+```bash
+PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go build
+PS D:\jinshan\wanyongzhi\week03\homework\fileprocessing> go run main.go
+处理所有文件共花费时间：0.7541599秒
+```
+
