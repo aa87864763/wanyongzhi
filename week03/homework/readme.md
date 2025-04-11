@@ -191,11 +191,11 @@ phrase 和 translation：40735个
 
 现在的流程变更为：
 
-1. 进行数据库连接。
+1.进行数据库连接。
 
-2. 定义结构体。
+2.定义结构体。
 
-3. 预编译SQL插入语句。
+3.预编译SQL插入语句。
 
    ```go
    var (
@@ -209,23 +209,23 @@ phrase 和 translation：40735个
    insertPhrasesStmt, err = db.Prepare("INSERT OR IGNORE INTO phrases (word_id, phrase, translation) VALUES (?, ?, ?)")
    ```
 
-4. 定义wordLists管道进行协程之间的数据交互。
+4.定义wordLists管道进行协程之间的数据交互。
 
    ```go
    wordLists := make(chan []WordData, len(jsonFiles))
    ```
 
-5. 定义done管道判断后续写入操作是否结束。
+5.定义done管道判断后续写入操作是否结束。
 
    ````go
    done := make(chan struct{})
    ````
 
-6. 并行读取Json文件，同时并行进行写入数据库操作。
+6.并行读取Json文件，同时并行进行写入数据库操作。
 
    在这块儿内容中，将原`processJson(db, filepath)`拆分为了`readFile(filePath, &wg, wordLists)`和`writeDatabase(db, wordLists, done)`，原本将读文件和写文件操作合并在一起串行运行，现在使用协程并行运行。
 
-7. 等待Json文件读取完成后关闭管道wordList，等待数据库写入完成关闭管道done。
+7.等待Json文件读取完成后关闭管道wordList，等待数据库写入完成关闭管道done。
 
 **流程图为：**
 
