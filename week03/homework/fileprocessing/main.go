@@ -35,6 +35,7 @@ type Phrase struct {
 	Translation string `json:"translation"`
 }
 
+// 定义预编译语句
 var (
 	insertWordStmt         *sql.Stmt
 	insertTranslationsStmt *sql.Stmt
@@ -82,6 +83,7 @@ func initDatabase(dbPath string) *sql.DB {
 	return db
 }
 
+// 判断表的存在与否进行创建
 func createTable(db *sql.DB, tableName, createSQL string) {
 	var count int
 	db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = ?", tableName).Scan(&count)
@@ -250,7 +252,7 @@ func main() {
 		fmt.Printf("处理所有文件共花费时间：%v秒\n", duration.Seconds())
 	}()
 
-	// 并行读取JSON文件
+	// 并行读取Json文件
 	for _, filePath := range jsonFiles {
 		wg.Add(1)
 		go readFile(filePath, &wg, wordLists)
