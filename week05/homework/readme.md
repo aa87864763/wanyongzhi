@@ -52,7 +52,7 @@
 
 系统由以下主要模块组成：
 
-<img src="./modules.jpg" style="zoom:50%;" />
+![示例图片](./modules.jpg)
 
 ## 各模块功能说明
 
@@ -85,7 +85,7 @@
 
 系统的主要运行流程如下：
 
-<img src="./process.jpg" style="zoom:67%;" />
+![示例图片](./process.jpg)
 
 详细流程说明：
 
