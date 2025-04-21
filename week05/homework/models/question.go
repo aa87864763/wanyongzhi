@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -16,8 +17,8 @@ const (
 type ModelProvider string
 
 const (
-	Qwen     ModelProvider = "qwen"
 	Deepseek ModelProvider = "deepseek"
+	Tongyi   ModelProvider = "tongyi"
 )
 
 // 编程语言参数
@@ -36,7 +37,7 @@ type QuestionRequest struct {
 	Model    ModelProvider       `json:"model,omitempty"`
 	Language ProgrammingLanguage `json:"language,omitempty"`
 	Type     QuestionType        `json:"type,omitempty"`
-	Keyword  string              `json:"keyword,omitempty"`
+	Keyword  string              `json:"keyword"`
 }
 
 // AI生成的题目
@@ -57,7 +58,7 @@ type AIResponse struct {
 type QuestionData struct {
 	AIStartTime time.Time       `json:"aiStartTime"` // AI请求开始时间
 	AIEndTime   time.Time       `json:"aiEndTime"`   // AI请求结束时间
-	AICostTime  int             `json:"aiCostTime"`  // AI请求耗时（秒）
+	AICostTime  int             `json:"aiCostTime"`  // AI请求耗时
 	AIStatus    string          `json:"-"`           // AI请求状态，在JSON中不显示
 	AIReq       QuestionRequest `json:"aiReq"`       // 用户请求参数
 	AIRes       AIResponse      `json:"aiRes"`       // AI返回结果
@@ -70,10 +71,40 @@ type HTTPResponse struct {
 	AIRes AIResponse `json:"aiRes,omitempty"` // AI返回结果
 }
 
+// ValidateModelProvider 验证模型提供商是否有效
+func ValidateModelProvider(model ModelProvider) error {
+	switch model {
+	case Deepseek, Tongyi, "":
+		return nil
+	default:
+		return fmt.Errorf("无效的模型: '%s'，只支持'deepseek' 或 'tongyi'", model)
+	}
+}
+
+// ValidateLanguage 验证编程语言是否有效
+func ValidateLanguage(lang ProgrammingLanguage) error {
+	switch lang {
+	case Go, Java, Python, CPP, JavaScript, "":
+		return nil
+	default:
+		return fmt.Errorf("无效的编程语言: '%s'，支持的语言有 'go', 'java', 'python', 'c++', 'javascript'", lang)
+	}
+}
+
+// ValidateQuestionType 验证题目类型是否有效
+func ValidateQuestionType(qType QuestionType) error {
+	switch qType {
+	case SingleChoice, MultiChoice, 0:
+		return nil
+	default:
+		return fmt.Errorf("无效的题目类型: %d，只支持 1(单选题) 或 2(多选题)", qType)
+	}
+}
+
 // GetModelName 获取模型名称，处理默认值
 func (r *QuestionRequest) GetModelName() ModelProvider {
 	if r.Model == "" {
-		return Qwen
+		return Tongyi
 	}
 	return r.Model
 }
@@ -92,4 +123,29 @@ func (r *QuestionRequest) GetQuestionType() QuestionType {
 		return SingleChoice
 	}
 	return r.Type
+}
+
+// Validate 验证请求参数是否有效
+func (r *QuestionRequest) Validate() error {
+	// 验证关键词是否为空
+	if r.Keyword == "" {
+		return fmt.Errorf("关键词(keyword)为必填项，不能为空")
+	}
+
+	// 验证模型
+	if err := ValidateModelProvider(r.Model); err != nil {
+		return err
+	}
+
+	// 验证编程语言
+	if err := ValidateLanguage(r.Language); err != nil {
+		return err
+	}
+
+	// 验证题目类型
+	if err := ValidateQuestionType(r.Type); err != nil {
+		return err
+	}
+
+	return nil
 }

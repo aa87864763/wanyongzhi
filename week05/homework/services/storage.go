@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// StorageService 负责数据的存储
 type StorageService struct {
 	DataDir string
 }
@@ -22,7 +21,7 @@ func NewStorageService() *StorageService {
 	return &StorageService{DataDir: dataDir}
 }
 
-// SaveQuestion 保存问题数据到JSON文件
+// 保存问题数据到JSON文件
 func (s *StorageService) SaveQuestion(data *models.QuestionData) error {
 	// 获取当前日期作为文件名
 	today := time.Now().Format("2006_01_02")

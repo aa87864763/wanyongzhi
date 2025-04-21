@@ -115,52 +115,25 @@ func (c *AIClient) GenerateQuestion(req *models.QuestionRequest) (*models.Questi
 	var response *models.AIResponse
 	var err error
 	var status string
-	var fallbackErr error
 
-	// 根据请求选择合适的AI服务
+	// 根据请求选择合适的AI服务，不再有回退逻辑
 	switch req.GetModelName() {
-	case models.Qwen:
-		response, err = c.callQwenAPI(req)
-		status = "qwen"
-
-		// 如果Qwen失败，尝试使用DeepSeek作为备用
-		if err != nil && c.config.DeepseekAPIKey != "" {
-			fmt.Printf("Qwen API调用失败: %v，尝试使用DeepSeek API作为备用\n", err)
-			fallbackErr = err // 保存原始错误
-			response, err = c.callDeepseekAPI(req)
-			if err == nil {
-				status = "deepseek(fallback)"
-			}
+	case models.Tongyi:
+		if c.config.QwenAPIKey == "" {
+			return nil, fmt.Errorf("Qwen API密钥未配置")
 		}
+		response, err = c.callQwenAPI(req)
+		status = string(req.GetModelName())
 
 	case models.Deepseek:
+		if c.config.DeepseekAPIKey == "" {
+			return nil, fmt.Errorf("Deepseek API密钥未配置")
+		}
 		response, err = c.callDeepseekAPI(req)
 		status = "deepseek"
 
-		// 如果DeepSeek失败，尝试使用Qwen作为备用
-		if err != nil && c.config.QwenAPIKey != "" {
-			fmt.Printf("DeepSeek API调用失败: %v，尝试使用Qwen API作为备用\n", err)
-			fallbackErr = err // 保存原始错误
-			response, err = c.callQwenAPI(req)
-			if err == nil {
-				status = "qwen(fallback)"
-			}
-		}
-
 	default:
-		// 默认尝试两个API，先用Qwen
-		response, err = c.callQwenAPI(req)
-		status = "qwen"
-
-		// 如果Qwen失败，尝试DeepSeek
-		if err != nil && c.config.DeepseekAPIKey != "" {
-			fmt.Printf("默认使用Qwen API失败: %v，尝试使用DeepSeek API\n", err)
-			fallbackErr = err // 保存原始错误
-			response, err = c.callDeepseekAPI(req)
-			if err == nil {
-				status = "deepseek(fallback)"
-			}
-		}
+		return nil, fmt.Errorf("不支持的模型类型: %s", req.GetModelName())
 	}
 
 	// 记录结束时间
@@ -168,17 +141,12 @@ func (c *AIClient) GenerateQuestion(req *models.QuestionRequest) (*models.Questi
 	costTime := int(endTime.Sub(startTime).Seconds())
 
 	if err != nil {
-		errorMsg := err.Error()
-		if fallbackErr != nil {
-			errorMsg = fmt.Sprintf("主要API错误: %v; 备用API错误: %v", fallbackErr, err)
-		}
-
 		// 内部使用AIStatus记录错误信息，但不会在JSON输出中显示
 		return &models.QuestionData{
 			AIStartTime: startTime,
 			AIEndTime:   endTime,
 			AICostTime:  costTime,
-			AIStatus:    "error: " + errorMsg, // 这个字段在JSON中将被忽略
+			AIStatus:    "error: " + err.Error(), // 这个字段在JSON中将被忽略
 			AIReq:       *req,
 			AIRes:       models.AIResponse{},
 		}, err
