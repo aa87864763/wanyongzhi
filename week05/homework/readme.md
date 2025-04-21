@@ -330,8 +330,8 @@ case StorageError:
 ```
 项目根目录/
 ├── data/
-│   ├── 2023_01_01.json
-│   ├── 2023_01_02.json
+│   ├── 2025_04_21.json
+│   ├── 2025_04_22.json
 │   └── ...
 ```
 
@@ -343,9 +343,9 @@ case StorageError:
 
 ```
 # API配置
-QWEN_API_KEY=your_qwen_api_key    
+QWEN_API_KEY=sk-********    
 QWEN_API_URL=https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation
-DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_API_KEY=sk-********
 DEEPSEEK_API_URL=https://api.deepseek.com/v1/chat/completions
 
 # 服务器配置
@@ -417,13 +417,13 @@ curl -X POST http://localhost:8081/api/questions/create \
 
 使用postman:
 
-```
+```bash
 POST http://localhost:8081/api/questions/create 
 ```
 
 在body的raw中输入请求体:
 
-```
+```json
 {
     "model":"tongyi",
     "language":"java",
