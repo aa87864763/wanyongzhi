@@ -116,7 +116,7 @@ func (c *AIClient) GenerateQuestion(req *models.QuestionRequest) (*models.Questi
 	var err error
 	var status string
 
-	// 根据请求选择合适的AI服务，不再有回退逻辑
+	// 根据请求选择合适的AI服务
 	switch req.GetModelName() {
 	case models.Tongyi:
 		if c.config.QwenAPIKey == "" {
@@ -141,12 +141,11 @@ func (c *AIClient) GenerateQuestion(req *models.QuestionRequest) (*models.Questi
 	costTime := int(endTime.Sub(startTime).Seconds())
 
 	if err != nil {
-		// 内部使用AIStatus记录错误信息，但不会在JSON输出中显示
 		return &models.QuestionData{
 			AIStartTime: startTime,
 			AIEndTime:   endTime,
 			AICostTime:  costTime,
-			AIStatus:    "error: " + err.Error(), // 这个字段在JSON中将被忽略
+			AIStatus:    "error: " + err.Error(),
 			AIReq:       *req,
 			AIRes:       models.AIResponse{},
 		}, err
@@ -157,7 +156,7 @@ func (c *AIClient) GenerateQuestion(req *models.QuestionRequest) (*models.Questi
 		AIStartTime: startTime,
 		AIEndTime:   endTime,
 		AICostTime:  costTime,
-		AIStatus:    status, // 这个字段在JSON中将被忽略
+		AIStatus:    status,
 		AIReq:       *req,
 		AIRes:       *response,
 	}
@@ -165,7 +164,7 @@ func (c *AIClient) GenerateQuestion(req *models.QuestionRequest) (*models.Questi
 	return questionData, nil
 }
 
-// callQwenAPI 调用Qwen API
+// 调用Qwen API
 func (c *AIClient) callQwenAPI(req *models.QuestionRequest) (*models.AIResponse, error) {
 	if c.config.QwenAPIKey == "" {
 		return nil, fmt.Errorf("Qwen API密钥未配置")
@@ -331,7 +330,7 @@ func (c *AIClient) callQwenAPI(req *models.QuestionRequest) (*models.AIResponse,
 	}, nil
 }
 
-// callDeepseekAPI 调用Deepseek API
+// 调用Deepseek API
 func (c *AIClient) callDeepseekAPI(req *models.QuestionRequest) (*models.AIResponse, error) {
 	if c.config.DeepseekAPIKey == "" {
 		return nil, fmt.Errorf("Deepseek API密钥未配置")
@@ -463,7 +462,7 @@ func (c *AIClient) callDeepseekAPI(req *models.QuestionRequest) (*models.AIRespo
 	}, nil
 }
 
-// buildPrompt 构建提示语
+// 构建提示语
 func buildPrompt(req *models.QuestionRequest) string {
 	questionType := "单选题"
 	if req.GetQuestionType() == models.MultiChoice {

@@ -13,7 +13,7 @@ type StorageService struct {
 	DataDir string
 }
 
-// NewStorageService 创建新的存储服务
+// 创建新的存储服务
 func NewStorageService() *StorageService {
 	// 确保数据目录存在
 	dataDir := "./data"
@@ -21,7 +21,7 @@ func NewStorageService() *StorageService {
 	return &StorageService{DataDir: dataDir}
 }
 
-// 保存问题数据到JSON文件
+// 保存数据到JSON文件
 func (s *StorageService) SaveQuestion(data *models.QuestionData) error {
 	// 获取当前日期作为文件名
 	today := time.Now().Format("2006_01_02")
@@ -45,7 +45,6 @@ func (s *StorageService) SaveQuestion(data *models.QuestionData) error {
 
 	// 添加新问题数据
 	questionCopy := *data
-	// 不需要在JSON中存储AIStatus
 	questionCopy.AIStatus = ""
 	questions = append(questions, questionCopy)
 
@@ -62,7 +61,7 @@ func (s *StorageService) SaveQuestion(data *models.QuestionData) error {
 	return nil
 }
 
-// SaveQuestions 批量保存题目并返回ID列表
+// 批量保存题目并返回ID列表
 func (s *StorageService) SaveQuestions(questionList []models.QuestionData) error {
 	if len(questionList) == 0 {
 		return nil
@@ -91,7 +90,6 @@ func (s *StorageService) SaveQuestions(questionList []models.QuestionData) error
 	// 添加新问题数据
 	for _, data := range questionList {
 		questionCopy := data
-		// 不需要在JSON中存储AIStatus
 		questionCopy.AIStatus = ""
 		questions = append(questions, questionCopy)
 	}

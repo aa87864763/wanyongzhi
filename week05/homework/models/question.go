@@ -42,33 +42,33 @@ type QuestionRequest struct {
 
 // AI生成的题目
 type AIQuestion struct {
-	Title   string   `json:"title"`   // 题目标题
-	Options []string `json:"options"` // 选项内容 [A,B,C,D]
-	Right   []int    `json:"right"`   // 正确答案索引列表，从0开始，如[0]表示A正确，[0,1]表示A和B正确
+	Title   string   `json:"title"`
+	Options []string `json:"options"`
+	Right   []int    `json:"right"`
 }
 
 // AIResponse AI请求的整体响应
 type AIResponse struct {
-	Title  string   `json:"title"`  // 题目标题
-	Answer []string `json:"answer"` // 答案选项
-	Right  []int    `json:"right"`  // 正确答案索引
+	Title  string   `json:"title"`
+	Answer []string `json:"answer"`
+	Right  []int    `json:"right"`
 }
 
 // QuestionData 存储在JSON文件中的完整问题数据
 type QuestionData struct {
-	AIStartTime time.Time       `json:"aiStartTime"` // AI请求开始时间
-	AIEndTime   time.Time       `json:"aiEndTime"`   // AI请求结束时间
-	AICostTime  int             `json:"aiCostTime"`  // AI请求耗时
-	AIStatus    string          `json:"-"`           // AI请求状态，在JSON中不显示
-	AIReq       QuestionRequest `json:"aiReq"`       // 用户请求参数
-	AIRes       AIResponse      `json:"aiRes"`       // AI返回结果
+	AIStartTime time.Time       `json:"aiStartTime"`
+	AIEndTime   time.Time       `json:"aiEndTime"`
+	AICostTime  int             `json:"aiCostTime"`
+	AIStatus    string          `json:"-"`
+	AIReq       QuestionRequest `json:"aiReq"`
+	AIRes       AIResponse      `json:"aiRes"`
 }
 
 // HTTPResponse HTTP接口返回的响应结构
 type HTTPResponse struct {
-	Code  int        `json:"code"`            // 状态码，0表示成功，负数表示异常
-	Msg   string     `json:"msg"`             // 消息，正常为空，异常时返回错误信息
-	AIRes AIResponse `json:"aiRes,omitempty"` // AI返回结果
+	Code  int        `json:"code"`
+	Msg   string     `json:"msg"`
+	AIRes AIResponse `json:"aiRes,omitempty"`
 }
 
 // ValidateModelProvider 验证模型提供商是否有效

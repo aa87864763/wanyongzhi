@@ -98,7 +98,7 @@ func (c *QuestionController) CreateQuestion(ctx *gin.Context) {
 		return
 	}
 
-	// 存储问题数据（AIStatus字段已在模型定义中标记为json:"-"，不会出现在JSON输出中）
+	// 存储问题数据
 	if err := c.storage.SaveQuestion(questionData); err != nil {
 		ctx.JSON(http.StatusOK, models.HTTPResponse{
 			Code:  -3,
