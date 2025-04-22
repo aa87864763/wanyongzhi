@@ -12,13 +12,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// QuestionController 问题控制器
+// 问题控制器
 type QuestionController struct {
 	aiClient *services.AIClient
 	storage  *services.StorageService
 }
 
-// NewQuestionController 创建新的问题控制器
+// 创建新的问题控制器
 func NewQuestionController(aiClient *services.AIClient, storage *services.StorageService) *QuestionController {
 	return &QuestionController{
 		aiClient: aiClient,
@@ -26,9 +26,8 @@ func NewQuestionController(aiClient *services.AIClient, storage *services.Storag
 	}
 }
 
-// CreateQuestion 创建新问题的处理器
+// 创建新问题的处理器
 func (c *QuestionController) CreateQuestion(ctx *gin.Context) {
-	// 检查未知字段
 	body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, models.HTTPResponse{

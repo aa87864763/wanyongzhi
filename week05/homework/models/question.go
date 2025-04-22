@@ -9,8 +9,8 @@ import (
 type QuestionType int
 
 const (
-	SingleChoice QuestionType = 1 // 单选题
-	MultiChoice  QuestionType = 2 // 多选题
+	SingleChoice QuestionType = 1
+	MultiChoice  QuestionType = 2
 )
 
 // 选择模型
@@ -32,7 +32,7 @@ const (
 	JavaScript ProgrammingLanguage = "javascript"
 )
 
-// QuestionRequest 题目生成请求
+// 题目生成请求
 type QuestionRequest struct {
 	Model    ModelProvider       `json:"model,omitempty"`
 	Language ProgrammingLanguage `json:"language,omitempty"`
@@ -40,21 +40,21 @@ type QuestionRequest struct {
 	Keyword  string              `json:"keyword"`
 }
 
-// AI生成的题目
+// 生成的题目
 type AIQuestion struct {
 	Title   string   `json:"title"`
 	Options []string `json:"options"`
 	Right   []int    `json:"right"`
 }
 
-// AIResponse AI请求的整体响应
+// 请求的整体响应
 type AIResponse struct {
 	Title  string   `json:"title"`
 	Answer []string `json:"answer"`
 	Right  []int    `json:"right"`
 }
 
-// QuestionData 存储在JSON文件中的完整问题数据
+// 存储在JSON文件中的完整问题数据
 type QuestionData struct {
 	AIStartTime time.Time       `json:"aiStartTime"`
 	AIEndTime   time.Time       `json:"aiEndTime"`
@@ -64,14 +64,14 @@ type QuestionData struct {
 	AIRes       AIResponse      `json:"aiRes"`
 }
 
-// HTTPResponse HTTP接口返回的响应结构
+// 接口返回的响应结构
 type HTTPResponse struct {
 	Code  int        `json:"code"`
 	Msg   string     `json:"msg"`
 	AIRes AIResponse `json:"aiRes,omitempty"`
 }
 
-// ValidateModelProvider 验证模型提供商是否有效
+// 验证模型是否有效
 func ValidateModelProvider(model ModelProvider) error {
 	switch model {
 	case Deepseek, Tongyi, "":
@@ -81,7 +81,7 @@ func ValidateModelProvider(model ModelProvider) error {
 	}
 }
 
-// ValidateLanguage 验证编程语言是否有效
+// 验证编程语言是否有效
 func ValidateLanguage(lang ProgrammingLanguage) error {
 	switch lang {
 	case Go, Java, Python, CPP, JavaScript, "":
@@ -91,7 +91,7 @@ func ValidateLanguage(lang ProgrammingLanguage) error {
 	}
 }
 
-// ValidateQuestionType 验证题目类型是否有效
+// 验证题目类型是否有效
 func ValidateQuestionType(qType QuestionType) error {
 	switch qType {
 	case SingleChoice, MultiChoice, 0:
@@ -101,7 +101,7 @@ func ValidateQuestionType(qType QuestionType) error {
 	}
 }
 
-// GetModelName 获取模型名称，处理默认值
+// 获取模型名称，处理默认值
 func (r *QuestionRequest) GetModelName() ModelProvider {
 	if r.Model == "" {
 		return Tongyi
@@ -109,7 +109,7 @@ func (r *QuestionRequest) GetModelName() ModelProvider {
 	return r.Model
 }
 
-// GetLanguage 获取编程语言，处理默认值
+// 获取编程语言，处理默认值
 func (r *QuestionRequest) GetLanguage() ProgrammingLanguage {
 	if r.Language == "" {
 		return Go
@@ -117,7 +117,7 @@ func (r *QuestionRequest) GetLanguage() ProgrammingLanguage {
 	return r.Language
 }
 
-// GetQuestionType 获取题目类型，处理默认值
+// 获取题目类型，处理默认值
 func (r *QuestionRequest) GetQuestionType() QuestionType {
 	if r.Type == 0 {
 		return SingleChoice
@@ -125,26 +125,30 @@ func (r *QuestionRequest) GetQuestionType() QuestionType {
 	return r.Type
 }
 
-// Validate 验证请求参数是否有效
+// 验证请求参数是否有效
 func (r *QuestionRequest) Validate() error {
 	// 验证关键词是否为空
 	if r.Keyword == "" {
 		return fmt.Errorf("关键词(keyword)为必填项，不能为空")
 	}
 
-	// 验证模型
-	if err := ValidateModelProvider(r.Model); err != nil {
-		return err
+	// 只在用户明确提供非空值时才验证这些字段
+	if r.Model != "" {
+		if err := ValidateModelProvider(r.Model); err != nil {
+			return err
+		}
 	}
 
-	// 验证编程语言
-	if err := ValidateLanguage(r.Language); err != nil {
-		return err
+	if r.Language != "" {
+		if err := ValidateLanguage(r.Language); err != nil {
+			return err
+		}
 	}
 
-	// 验证题目类型
-	if err := ValidateQuestionType(r.Type); err != nil {
-		return err
+	if r.Type != 0 {
+		if err := ValidateQuestionType(r.Type); err != nil {
+			return err
+		}
 	}
 
 	return nil
