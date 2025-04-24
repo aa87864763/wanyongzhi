@@ -10,33 +10,37 @@ import (
 	"time"
 )
 
-// 判断是否为素数
-func isPirme(n int) bool {
-	if n <= 1 {
+func isPrime(n int) bool {
+	if n < 2 {
 		return false
 	}
 	if n == 2 {
 		return true
 	}
+	if n == 3 {
+		return true
+	}
 	if n%2 == 0 {
 		return false
 	}
+	if n%3 == 0 {
+		return false
+	}
 
-	sqrtN := int(math.Sqrt(float64(n))) + 1
-	for i := 3; i <= sqrtN; i += 2 {
-		if n%i == 0 {
+	sqrtN := int(math.Sqrt(float64(n)))
+	for i := 5; i <= sqrtN; i += 6 {
+		if n%i == 0 || n%(i+2) == 0 {
 			return false
 		}
 	}
 	return true
 }
 
-// 用于进行判断的协程
-func woker(start, end int, primesChan chan<- int, wg *sync.WaitGroup) {
+func worker(start, end int, primesChan chan<- int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	for num := start; num <= end; num++ {
-		if isPirme(num) {
+		if isPrime(num) {
 			primesChan <- num
 		}
 	}
@@ -101,8 +105,8 @@ func main() {
 		return
 	}
 
-	if start >= end {
-		fmt.Println("起始值必须小于结束值")
+	if start > end {
+		fmt.Println("起始值必须小于或等于结束值")
 		return
 	}
 
@@ -118,17 +122,22 @@ func main() {
 	// 提前开启等待数据传入
 	go writeToFile(primesChan, done, filename)
 
-	totalNumbers := end - start + 1
-	numbersPerWorker := totalNumbers / 4
-
-	for i := 0; i < 4; i++ {
+	if start == end {
 		wg.Add(1)
-		workerStart := start + i*numbersPerWorker
-		wokerEnd := workerStart + numbersPerWorker - 1
-		if i == 3 {
-			wokerEnd = end
+		go worker(start, end, primesChan, &wg)
+	} else {
+		totalNumbers := end - start + 1
+		numbersPerWorker := totalNumbers / 4
+
+		for i := 0; i < 4; i++ {
+			wg.Add(1)
+			workerStart := start + i*numbersPerWorker
+			workerEnd := workerStart + numbersPerWorker - 1
+			if i == 3 {
+				workerEnd = end
+			}
+			go worker(workerStart, workerEnd, primesChan, &wg)
 		}
-		go woker(workerStart, wokerEnd, primesChan, &wg)
 	}
 
 	// 等待协程结束
