@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"time"
 )
 
+// 判断是否为素数
 func isPirme(n int) bool {
 	if n <= 1 {
 		return false
@@ -29,6 +31,7 @@ func isPirme(n int) bool {
 	return true
 }
 
+// 用于进行判断的协程
 func woker(start, end int, primesChan chan<- int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -39,7 +42,8 @@ func woker(start, end int, primesChan chan<- int, wg *sync.WaitGroup) {
 	}
 }
 
-func writePrimesToFile(primes []int, filename string) error {
+// 将素数写入文件
+/* func writePrimesToFile(primes []int, filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -53,28 +57,51 @@ func writePrimesToFile(primes []int, filename string) error {
 		}
 	}
 	return nil
+} */
+
+func writeToFile(primesChan <-chan int, done chan<- bool, filename string) {
+	file, err := os.Create(filename)
+	if err != nil {
+		fmt.Printf("创建文件出错：%v\n", err)
+		done <- false
+		return
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+
+	for prime := range primesChan {
+		_, err := fmt.Fprintln(writer, prime)
+		if err != nil {
+			fmt.Printf("写入文件出错：%v\n", err)
+			done <- false
+			return
+		}
+	}
+	done <- true
 }
 
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Println("Usage: go run main.go <start> <end>")
+		fmt.Println("请正确输入命令: go run main.go <start> <end>")
 		return
 	}
 
 	start, err := strconv.Atoi(os.Args[1])
 	if err != nil {
-		fmt.Println("Invalid start value:", err)
+		fmt.Println("无效的起始值:", err)
 		return
 	}
 
 	end, err := strconv.Atoi(os.Args[2])
 	if err != nil {
-		fmt.Println("Invalid end value:", err)
+		fmt.Println("无效的结束值:", err)
 		return
 	}
 
 	if start >= end {
-		fmt.Println("Start value must be less than end value.")
+		fmt.Println("起始值必须小于结束值")
 		return
 	}
 
@@ -83,6 +110,11 @@ func main() {
 	primesChan := make(chan int, 1000)
 
 	var wg sync.WaitGroup
+	done := make(chan bool)
+
+	filename := fmt.Sprintf("primes_%d_%d.txt", start, end)
+
+	go writeToFile(primesChan, done, filename)
 
 	totalNumbers := end - start + 1
 	numbersPerWorker := totalNumbers / 4
@@ -97,26 +129,46 @@ func main() {
 		go woker(workerStart, wokerEnd, primesChan, &wg)
 	}
 
+	// 等待协程结束
 	go func() {
 		wg.Wait()
 		close(primesChan)
 	}()
 
-	var primes []int
-
-	for prime := range primesChan {
-		primes = append(primes, prime)
-	}
-
-	filename := fmt.Sprintf("prime_%d_%d.txt", start, end)
-	err = writePrimesToFile(primes, filename)
-	if err != nil {
-		fmt.Printf("Error writing to file :%v\n", err)
+	success := <-done
+	if !success {
 		return
 	}
 
+	file, err := os.Open(filename)
+	if err != nil {
+		fmt.Printf("错误%v\n", err)
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	count := 0
+	for scanner.Scan() {
+		count++
+	}
+
+	/* 	var primes []int
+
+	   	for prime := range primesChan {
+	   		primes = append(primes, prime)
+	   	}
+
+	   	filename := fmt.Sprintf("prime_%d_%d.txt", start, end)
+	   	err = writePrimesToFile(primes, filename)
+	   	if err != nil {
+	   		fmt.Printf("无法写入文件 :%v\n", err)
+	   		return
+	   	} */
+
 	duration := time.Since(startTime)
 
-	fmt.Printf("Total primes found:%d\n", len(primes))
-	fmt.Printf("Time taken :%f秒\n", duration.Seconds())
+	/* fmt.Printf("所有素数数量:%d\n", len(primes)) */
+	fmt.Printf("所有素数数量为：%d\n", count)
+	fmt.Printf("花费时间 :%f秒\n", duration.Seconds())
 }
