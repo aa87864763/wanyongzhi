@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Configuration 存储应用配置
+// 存储应用配置
 type Configuration struct {
 	QwenAPIKey     string
 	QwenAPIURL     string
@@ -18,9 +18,8 @@ type Configuration struct {
 	Host           string
 }
 
-// LoadConfig 从环境变量加载配置
+// 从环境变量加载配置
 func LoadConfig() *Configuration {
-	// 加载.env文件
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("警告: 未找到.env文件，使用环境变量")
@@ -32,9 +31,8 @@ func LoadConfig() *Configuration {
 	deepseekAPIKey := os.Getenv("DEEPSEEK_API_KEY")
 	deepseekAPIURL := os.Getenv("DEEPSEEK_API_URL")
 
-	// 加载服务配置
 	portStr := os.Getenv("PORT")
-	port := 8081 // 默认端口
+	port := 8081
 	if portStr != "" {
 		portInt, err := strconv.Atoi(portStr)
 		if err == nil {
@@ -63,28 +61,33 @@ func LoadConfig() *Configuration {
 	return config
 }
 
-// validateConfig 验证配置有效性
+// 验证配置有效性
 func validateConfig(config *Configuration) {
+	// 设置URL
 	if config.QwenAPIURL == "" {
-		config.QwenAPIURL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
-		log.Println("使用默认Qwen API URL")
+		log.Println("警告: 未设置qwen URL")
 	}
 
 	if config.DeepseekAPIURL == "" {
-		config.DeepseekAPIURL = "https://api.deepseek.com/v1/chat/completions"
-		log.Println("使用默认Deepseek API URL")
+		log.Println("警告: 未设置deepseek URL")
 	}
 
-	if config.QwenAPIKey == "" {
-		log.Println("警告: 未设置Qwen API密钥，相关功能将不可用")
+	// 检查API密钥是否可用
+	apiAvailable := false
+
+	if config.QwenAPIKey != "" {
+		apiAvailable = true
+	} else {
+		log.Println("警告: 未设置qwen API密钥")
 	}
 
-	if config.DeepseekAPIKey == "" {
-		log.Println("警告: 未设置Deepseek API密钥，相关功能将不可用")
+	if config.DeepseekAPIKey != "" {
+		apiAvailable = true
+	} else {
+		log.Println("警告: 未设置deepseek API密钥")
 	}
 
-	// 确保至少有一个API可用
-	if config.QwenAPIKey == "" && config.DeepseekAPIKey == "" {
+	if !apiAvailable {
 		log.Println("错误: 未设置任何API密钥，应用可能无法正常工作")
 	}
-} 
+}
