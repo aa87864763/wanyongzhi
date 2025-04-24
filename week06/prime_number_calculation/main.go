@@ -118,5 +118,5 @@ func main() {
 	duration := time.Since(startTime)
 
 	fmt.Printf("Total primes found:%d\n", len(primes))
-	fmt.Printf("Time taken :%d\n", duration)
+	fmt.Printf("Time taken :%f秒\n", duration.Seconds())
 }
