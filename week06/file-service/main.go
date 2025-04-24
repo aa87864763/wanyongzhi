@@ -74,9 +74,18 @@ func initDB() {
 }
 
 func handleUpload(c *gin.Context) {
-	//限制文件大小
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize)
+	// 检查 Content-Type
+	contentType := c.GetHeader("Content-Type")
+	if !strings.Contains(contentType, "multipart/form-data") {
+		c.JSON(http.StatusBadRequest, Response{
+			Code:    400,
+			Message: "Content-Type 必须为 multipart/form-data",
+			Data:    nil,
+		})
+		return
+	}
 
+	// 检查请求是否包含文件
 	form, err := c.MultipartForm()
 	if err != nil {
 		log.Printf("获取MultipartForm失败: %v", err)
@@ -98,6 +107,9 @@ func handleUpload(c *gin.Context) {
 		})
 		return
 	}
+
+	//限制文件大小
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize)
 
 	var result []FileInfo
 	for _, fileHeader := range files {
