@@ -59,6 +59,7 @@ func woker(start, end int, primesChan chan<- int, wg *sync.WaitGroup) {
 	return nil
 } */
 
+// 消费者模型
 func writeToFile(primesChan <-chan int, done chan<- bool, filename string) {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -114,6 +115,7 @@ func main() {
 
 	filename := fmt.Sprintf("primes_%d_%d.txt", start, end)
 
+	// 提前开启等待数据传入
 	go writeToFile(primesChan, done, filename)
 
 	totalNumbers := end - start + 1
