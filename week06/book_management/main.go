@@ -18,7 +18,7 @@ type Book struct {
 type Magazine struct {
 	ID          int
 	Title       string
-	Issue       string
+	Issue       int
 	IsAvailable bool
 }
 
@@ -93,13 +93,30 @@ func (l *Library) ShowAvailableItems() {
 func main() {
 	library := Library{Name: "Chinese Library"}
 
-	book1 := &Book{
-		ID:1,Title: "Language",Author: "wyz",IsAvailable: true
-	}
-	book2 := &Book{
-		ID:1,Title: "Language",Author: "wyz",IsAvailable: true
-	}
-	book3 := &Book{
-		ID:1,Title: "Language",Author: "wyz",IsAvailable: true
-	}
+	book1 := &Book{ID: 1, Title: "Language", Author: "wyz", IsAvailable: true}
+	book2 := &Book{ID: 1, Title: "Language1", Author: "wz", IsAvailable: true}
+	book3 := &Book{ID: 1, Title: "Language2", Author: "wyz11", IsAvailable: true}
+
+	library.AddBook(book1)
+	library.AddBook(book2)
+	library.AddBook(book3)
+
+	magazine1 := &Magazine{ID: 1, Title: "English", Issue: 11, IsAvailable: true}
+	magazine2 := &Magazine{ID: 2, Title: "English1", Issue: 22, IsAvailable: true}
+
+	library.AddMagazine(magazine1)
+	library.AddMagazine(magazine2)
+
+	library.ShowAvailableItems()
+
+	fmt.Println("借书")
+	book1.Borrow()
+
+	fmt.Println("借杂志")
+	magazine1.Borrow()
+
+	fmt.Println("还书")
+	book1.Return()
+
+	library.ShowAvailableItems()
 }
