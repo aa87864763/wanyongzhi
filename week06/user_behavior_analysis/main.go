@@ -2,285 +2,182 @@ package main
 
 import (
 	"bufio"
-	"encoding/csv"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 )
 
-// UserAction 表示一条用户行为日志
-type UserAction struct {
-	Timestamp    time.Time
-	UserID       string
-	ActionType   string
-	ActionDetail string
+type Data struct {
+	Time       time.Time
+	User_id    string
+	Action     string
+	ActionInfo string
 }
 
-// UserStats 用户统计信息
-type UserStats struct {
+type userStats struct {
 	UserID      string
 	ActionCount int
 	FirstAction time.Time
 	LastAction  time.Time
 }
 
-// ActionTypeStats 行为类型统计
-type ActionTypeStats struct {
-	ActionType string
-	Count      int
+type actionStats struct {
+	Action string
+	count  int
 }
 
-// TimeWindowStats 时间窗口统计
-type TimeWindowStats struct {
-	TimeWindow   time.Time
-	ActiveUsers  int
-	TotalActions int
+type minStats struct {
+	Time      string
+	UserNum   int
+	ActionNum int
 }
 
-func ParseLogLine(line string) (*UserAction, error) {
-	parts := strings.Split(line, ",")
-	if len(parts) != 4 {
-		return nil, fmt.Errorf("invalid log format: %s", line)
-	}
-
-	// 解析时间戳
-	timestamp, err := time.Parse("2006-01-02 15:04:05", strings.TrimSpace(parts[0]))
+func getData(pathfile string) []Data {
+	file, err := os.Open(pathfile)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing timestamp: %v", err)
-	}
-
-	return &UserAction{
-		Timestamp:    timestamp,
-		UserID:       strings.TrimSpace(parts[1]),
-		ActionType:   strings.TrimSpace(parts[2]),
-		ActionDetail: strings.TrimSpace(parts[3]),
-	}, nil
-}
-
-// ReadLogFile 读取并解析日志文件
-func ReadLogFile(filepath string) ([]UserAction, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("error opening file: %v", err)
+		panic(err)
 	}
 	defer file.Close()
-
-	var actions []UserAction
+	var data []Data
 	scanner := bufio.NewScanner(file)
-
 	for scanner.Scan() {
-		action, err := ParseLogLine(scanner.Text())
-		if err != nil {
-			fmt.Printf("Warning: Skipping line due to error: %v\n", err)
+		var temp Data
+		line := scanner.Text()
+		fmt.Println(line)
+		parts := strings.Split(line, ",")
+		if len(parts) != 4 {
+			fmt.Println("Invalid log format:", line)
 			continue
 		}
-		actions = append(actions, *action)
+		temp.Time, _ = time.Parse("2006-01-02 15:04:05", strings.TrimSpace(parts[0]))
+		temp.User_id = strings.TrimSpace(parts[1])
+		temp.Action = strings.TrimSpace(parts[2])
+		temp.ActionInfo = strings.TrimSpace(parts[3])
+		data = append(data, temp)
 	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading file: %v", err)
-	}
-
-	return actions, nil
+	return data
 }
 
-// 生成用户统计信息
-func generateUserStats(actions []UserAction) []UserStats {
-	userStatsMap := make(map[string]*UserStats)
+func generateUserStats(data []Data) {
+	userMap := make(map[string]userStats)
 
-	for _, action := range actions {
-		if stats, exists := userStatsMap[action.UserID]; exists {
-			stats.ActionCount++
-			if action.Timestamp.Before(stats.FirstAction) {
-				stats.FirstAction = action.Timestamp
-			}
-			if action.Timestamp.After(stats.LastAction) {
-				stats.LastAction = action.Timestamp
-			}
-		} else {
-			userStatsMap[action.UserID] = &UserStats{
-				UserID:      action.UserID,
+	for _, d := range data {
+		if user, existd := userMap[d.User_id]; !existd {
+			userMap[d.User_id] = userStats{
+				UserID:      d.User_id,
 				ActionCount: 1,
-				FirstAction: action.Timestamp,
-				LastAction:  action.Timestamp,
+				FirstAction: d.Time,
+				LastAction:  d.Time,
 			}
+		} else { //遇到重复id的时候，更新数据
+			user.ActionCount++
+			if d.Time.Before(user.FirstAction) {
+				user.FirstAction = d.Time
+			}
+			if d.Time.After(user.LastAction) {
+				user.LastAction = d.Time
+			}
+			userMap[d.User_id] = user
 		}
 	}
 
-	// 转换为切片并排序
-	userStats := make([]UserStats, 0, len(userStatsMap))
-	for _, stats := range userStatsMap {
-		userStats = append(userStats, *stats)
+	file, err := os.OpenFile("./user_statistics.csv", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
 	}
-	sort.Slice(userStats, func(i, j int) bool {
-		return userStats[i].ActionCount > userStats[j].ActionCount
-	})
-
-	return userStats
+	defer file.Close()
+	writer := bufio.NewWriter(file)
+	defer writer.Flush()
+	_, err = writer.WriteString("用户ID,操作次数,首次操作时间,最后操作时间\n")
+	if err != nil {
+		panic(err)
+	}
+	for _, user := range userMap {
+		_, err = writer.WriteString(fmt.Sprintf("%s,%d,%s,%s\n", user.UserID, user.ActionCount, user.FirstAction.Format("2006-01-02 15:04:05"), user.LastAction.Format("2006-01-02 15:04:05")))
+	}
 }
 
-// 生成行为类型统计
-func generateActionTypeStats(actions []UserAction) []ActionTypeStats {
-	actionTypeMap := make(map[string]int)
-
-	for _, action := range actions {
-		actionTypeMap[action.ActionType]++
-	}
-
-	// 转换为切片并排序
-	actionStats := make([]ActionTypeStats, 0, len(actionTypeMap))
-	for actionType, count := range actionTypeMap {
-		actionStats = append(actionStats, ActionTypeStats{
-			ActionType: actionType,
-			Count:      count,
-		})
-	}
-	sort.Slice(actionStats, func(i, j int) bool {
-		return actionStats[i].Count > actionStats[j].Count
-	})
-
-	return actionStats
-}
-
-// 生成时间窗口统计
-func generateTimeWindowStats(actions []UserAction) []TimeWindowStats {
-	timeWindowMap := make(map[time.Time]map[string]bool)
-	actionCountMap := make(map[time.Time]int)
-
-	for _, action := range actions {
-		// 将时间戳规整到分钟
-		windowTime := time.Date(
-			action.Timestamp.Year(),
-			action.Timestamp.Month(),
-			action.Timestamp.Day(),
-			action.Timestamp.Hour(),
-			action.Timestamp.Minute(),
-			0, 0, action.Timestamp.Location(),
-		)
-
-		if _, exists := timeWindowMap[windowTime]; !exists {
-			timeWindowMap[windowTime] = make(map[string]bool)
+func generateActionStats(data []Data) {
+	var actionMap = make(map[string]int)
+	for _, d := range data {
+		if _, existd := actionMap[d.Action]; !existd {
+			actionMap[d.Action] = 1
+		} else {
+			actionMap[d.Action]++
 		}
-		timeWindowMap[windowTime][action.UserID] = true
-		actionCountMap[windowTime]++
 	}
 
-	// 转换为切片并排序
-	timeStats := make([]TimeWindowStats, 0, len(timeWindowMap))
-	for windowTime, users := range timeWindowMap {
-		timeStats = append(timeStats, TimeWindowStats{
-			TimeWindow:   windowTime,
-			ActiveUsers:  len(users),
-			TotalActions: actionCountMap[windowTime],
-		})
-	}
-	sort.Slice(timeStats, func(i, j int) bool {
-		return timeStats[i].TimeWindow.Before(timeStats[j].TimeWindow)
-	})
-
-	return timeStats
-}
-
-// 保存用户统计到CSV
-func saveUserStatsToCSV(stats []UserStats, filename string) error {
-	file, err := os.Create(filename)
+	file, err := os.OpenFile("./action_statistics.csv", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer file.Close()
-
-	writer := csv.NewWriter(file)
+	writer := bufio.NewWriter(file)
 	defer writer.Flush()
-
-	// 写入表头
-	writer.Write([]string{"用户ID", "操作次数", "首次操作时间", "最后操作时间"})
-
-	// 写入数据
-	for _, stat := range stats {
-		writer.Write([]string{
-			stat.UserID,
-			fmt.Sprintf("%d", stat.ActionCount),
-			stat.FirstAction.Format("2006-01-02 15:04:05"),
-			stat.LastAction.Format("2006-01-02 15:04:05"),
-		})
+	_, err = writer.WriteString("操作类型,操作次数\n")
+	for action, count := range actionMap {
+		_, err = writer.WriteString(fmt.Sprintf("%s,%d\n", action, count))
 	}
-	return nil
 }
 
-// 保存行为类型统计到CSV
-func saveActionTypeStatsToCSV(stats []ActionTypeStats, filename string) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
+func generateTimeWindowStats(data []Data) {
+	var timeMap = make(map[string]minStats)        //时间点对应status
+	var userMap = make(map[string]map[string]bool) //时间点对应用户id
+	var temp minStats
+
+	for _, d := range data { //对于每一行数据，进行处理
+		timeNow := d.Time.Format("2006-01-02 15:04")
+
+		if _, existd := timeMap[timeNow]; !existd {
+			//如果没有这个时间点的记录，创建一个新的记录
+			//并且将用户id存入userMap中
+			timeMap[timeNow] = minStats{
+				Time:      timeNow,
+				UserNum:   1,
+				ActionNum: 1,
+			}
+			userMap[timeNow] = make(map[string]bool)
+			userMap[timeNow][d.User_id] = true
+		} else {
+			//如果有这个时间点的记录，更新记录
+			//并且判断用户id是否已经存在于userMap中，如果不存在，则添加
+			//如果存在，则不处理
+			temp = timeMap[timeNow]
+			temp.ActionNum++
+			if _, existd := userMap[timeNow][d.User_id]; !existd {
+				temp.UserNum++
+				userMap[timeNow][d.User_id] = true
+			}
+			timeMap[timeNow] = temp
+		}
 	}
+
+	file, err := os.OpenFile("./minute_statistics.csv", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// 写入表头
-	writer.Write([]string{"行为类型", "总次数"})
-
-	// 写入数据
-	for _, stat := range stats {
-		writer.Write([]string{
-			stat.ActionType,
-			fmt.Sprintf("%d", stat.Count),
-		})
-	}
-	return nil
-}
-
-// 保存时间窗口统计到CSV
-func saveTimeWindowStatsToCSV(stats []TimeWindowStats, filename string) error {
-	file, err := os.Create(filename)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
+	writer := bufio.NewWriter(file)
 	defer writer.Flush()
-
-	// 写入表头
-	writer.Write([]string{"时间段", "活跃用户数", "操作总数"})
-
-	// 写入数据
-	for _, stat := range stats {
-		writer.Write([]string{
-			stat.TimeWindow.Format("2006-01-02 15:04"),
-			fmt.Sprintf("%d", stat.ActiveUsers),
-			fmt.Sprintf("%d", stat.TotalActions),
-		})
+	_, err = writer.WriteString("时间段,活跃用户数,操作次数\n")
+	if err != nil {
+		panic(err)
 	}
-	return nil
+	for _, v := range timeMap {
+		_, err = writer.WriteString(fmt.Sprintf("%s,%d,%d\n",
+			v.Time,
+			v.UserNum,
+			v.ActionNum))
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func main() {
-	// 读取日志文件
-	actions, err := ReadLogFile("user_actions.log")
-	if err != nil {
-		fmt.Printf("Error reading log file: %v\n", err)
-		return
-	}
-
-	// 生成统计信息
-	userStats := generateUserStats(actions)
-	actionTypeStats := generateActionTypeStats(actions)
-	timeWindowStats := generateTimeWindowStats(actions)
-
-	// 保存统计结果到CSV文件
-	if err := saveUserStatsToCSV(userStats, "user_statistics.csv"); err != nil {
-		fmt.Printf("Error saving user statistics: %v\n", err)
-	}
-
-	if err := saveActionTypeStatsToCSV(actionTypeStats, "action_statistics.csv"); err != nil {
-		fmt.Printf("Error saving action type statistics: %v\n", err)
-	}
-
-	if err := saveTimeWindowStatsToCSV(timeWindowStats, "minute_statistics.csv"); err != nil {
-		fmt.Printf("Error saving time window statistics: %v\n", err)
-	}
+	data := getData("./user_actions.log")
+	generateUserStats(data)
+	generateActionStats(data)
+	generateTimeWindowStats(data)
 }
