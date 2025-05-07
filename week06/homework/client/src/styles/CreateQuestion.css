@@ -1,0 +1,27 @@
+.create-question {
+  width: 100%;
+}
+
+.ant-card-head-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.ant-form-item-label > label {
+  font-weight: 500;
+}
+
+.ant-radio-group {
+  display: flex;
+  gap: 8px;
+}
+
+.ant-radio-button-wrapper {
+  min-width: 80px;
+  text-align: center;
+}
+
+.ant-form-item-extra {
+  color: #666;
+  font-size: 12px;
+} 
