@@ -2,6 +2,48 @@
 
 这是一个包含前端和后端的完整的题库管理项目。根据第四次作业要求，该项目支持题库的增删改查、AI出题和手工出题等功能。
 
+## 项目目录结构
+
+```
+题库管理系统/
+├── client/                      # 前端React项目
+│   ├── src/
+│   │   ├── components/          # 通用组件
+│   │   ├── pages/            
+│   │   │   ├── AIPreview.tsx    # AI出题预览页面
+│   │   │   ├── CreateQuestion.tsx # 创建问题页面
+│   │   │   ├── QuestionList.tsx # 题目列表页面
+│   │   │   └── StudyNotes.tsx   # 学习心得页面
+│   │   ├── services/            
+│   │   │   └── api.ts           # 后端API调用
+│   │   ├── styles/              # 样式文件
+│   │   ├── types/               # TypeScript类型定义
+│   │   ├── App.tsx              # 应用入口组件
+│   │   └── main.tsx             # 应用挂载点
+│   ├── index.html               # HTML模板
+│   ├── package.json             # 依赖管理
+│   ├── tsconfig.json            # TypeScript配置
+│   └── vite.config.ts           # Vite构建配置
+│
+└── server/                      # 后端Go项目
+    ├── config/                 
+    │   └── config.go            # 配置加载
+    ├── controllers/            
+    │   └── question_controller.go # 题目控制器
+    ├── data/                  
+    │   └── questions.db         # SQLite数据库
+    ├── models/                 
+    │   └── question.go          # 题目模型
+    ├── routes/                 
+    │   └── routes.go            # API路由
+    ├── services/             
+    │   ├── ai_client.go         # AI客户端服务
+    │   └── storage.go           # 数据存储服务
+    ├── static/                  # 静态资源(前端打包后的文件)
+    ├── go.mod                   # Go模块依赖
+    └── main.go                  # 应用入口
+```
+
 ## 系统架构
 
 - 前端：React + TypeScript + Vite + Ant Design
