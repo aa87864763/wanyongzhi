@@ -3,17 +3,17 @@
 }
 
 .filter-card {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .filter-item {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .filter-label {
-  margin-right: 10px;
+  margin-right: 8px;
   white-space: nowrap;
 }
 
@@ -26,11 +26,25 @@
 
 .questions-table {
   background: #fff;
+  overflow-x: auto;
 }
 
 .ai-generated-questions {
   height: 400px;
   overflow-y: auto;
+}
+
+/* 调整题目类型按钮组样式 */
+.filter-item .ant-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.filter-item .ant-radio-group .ant-radio-button-wrapper {
+  margin-bottom: 5px;
+  flex: 0 0 auto;
 }
 
 /* 响应式调整 */
@@ -54,6 +68,24 @@
     justify-content: flex-end;
     margin-top: 10px;
   }
+
+  .filter-item .ant-radio-group {
+    margin-top: 8px;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-item .ant-radio-button-wrapper {
+    margin-right: 0;
+    min-width: unset;
+  }
+
+  .filter-item .ant-input-search {
+    width: 100% !important;
+    margin-top: 8px;
+  }
 }
 
 @media (max-width: 576px) {
@@ -61,7 +93,7 @@
     align-items: stretch;
     width: 100%;
   }
-  
+
   .action-buttons {
     flex-direction: column;
     align-items: stretch;
@@ -70,8 +102,28 @@
   .action-buttons .ant-btn {
     margin-bottom: 5px;
   }
+  
+  /* 小屏幕下题目类型按钮特殊处理 */
+  .filter-item .ant-radio-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  }
 }
 
-.ant-table-tbody > tr > td {
+/* 确保过滤器组中的按钮文字不会被截断 */
+.ant-radio-button-wrapper {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* 确保按钮组在空间不足时换行显示 */
+.ant-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ant-table-tbody>tr>td {
   padding: 12px 16px;
-} 
+}

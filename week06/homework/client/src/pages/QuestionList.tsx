@@ -738,7 +738,13 @@ const QuestionList = () => {
                   {generatedQuestions.map((question, index) => (
                     <Card 
                       key={index} 
-                      style={{ marginBottom: '16px' }}
+                      style={{ 
+                        marginBottom: '16px',
+                        opacity: selectedQuestions.includes(index) ? 1 : 0.6,
+                        transition: 'all 0.3s ease',
+                        borderColor: selectedQuestions.includes(index) ? '#1890ff' : '#f0f0f0',
+                        boxShadow: selectedQuestions.includes(index) ? '0 2px 8px rgba(24,144,255,0.2)' : 'none'
+                      }}
                       title={
                         <Checkbox 
                           checked={selectedQuestions.includes(index)}
