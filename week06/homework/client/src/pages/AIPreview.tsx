@@ -136,7 +136,6 @@ const AIPreview = () => {
     )
   }
 
-  // 修改AI预览页面，支持多语言展示
   const renderProgrammingCode = (code: string, languages: string[]) => {
     return (
       <div className="code-container">

@@ -642,7 +642,7 @@ const QuestionList = () => {
           <Button 
             key="save" 
             type="primary" 
-            disabled={generatedQuestions.length === 0}
+            disabled={generatedQuestions.length === 0 || selectedQuestions.length === 0}
             onClick={handleSaveGeneratedQuestions}
             loading={loading}
           >

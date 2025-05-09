@@ -55,7 +55,7 @@ function App() {
           style={{ 
             overflow: 'auto',
             height: '100vh',
-            background: '#f0f5fa' // 更换为淡雅的浅蓝灰色
+            background: '#f0f5fa' 
           }}
         >
           <div className="logo-container">

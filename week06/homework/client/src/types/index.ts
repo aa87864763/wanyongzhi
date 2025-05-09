@@ -12,7 +12,7 @@ export enum QuestionDifficulty {
   Hard = 3
 }
 
-// 模型提供商
+// 模型选择
 export type ModelProvider = 'deepseek' | 'tongyi'
 
 // 编程语言

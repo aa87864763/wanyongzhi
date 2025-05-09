@@ -4,7 +4,6 @@ interface SimpleMarkdownProps {
   children: string
 }
 
-// 一个非常简单的Markdown解析器，专注于标题、段落和列表
 const SimpleMarkdown = ({ children }: SimpleMarkdownProps): ReactNode => {
   if (!children) return null
 
