@@ -232,7 +232,6 @@ func (s *StorageService) GetAllQuestions() ([]models.QuestionData, error) {
 		q.AIReq.Difficulty = models.QuestionDifficulty(difficulty)
 
 		if q.AIReq.Type == models.Programming {
-			// 编程题不需要额外处理，只有标题
 		} else {
 			// 选择题解析选项和正确答案
 			if answerJSON.Valid && answerJSON.String != "" {
@@ -293,7 +292,6 @@ func (s *StorageService) ListQuestions(page, pageSize int, questionType int, dif
 	ORDER BY id DESC
 	LIMIT ? OFFSET ?`, whereClause)
 
-	// 添加分页参数
 	queryArgs := append(args, pageSize, offset)
 
 	rows, err := s.DB.Query(query, queryArgs...)
@@ -326,7 +324,6 @@ func (s *StorageService) ListQuestions(page, pageSize int, questionType int, dif
 		q.AIReq.Type = models.QuestionType(questionType)
 
 		if q.AIReq.Type == models.Programming {
-			// 编程题不需要额外处理，只有标题
 		} else {
 			// 选择题解析选项和正确答案
 			if answerJSON.Valid && answerJSON.String != "" {
@@ -378,7 +375,6 @@ func (s *StorageService) GetQuestionByID(id int64) (*models.QuestionData, error)
 
 	// 根据题目类型解析不同字段
 	if q.AIReq.Type == models.Programming {
-		// 编程题不需要额外处理，只有标题
 	} else {
 		// 选择题解析选项和正确答案
 		if answerJSON.Valid && answerJSON.String != "" {
@@ -579,16 +575,13 @@ func (s *StorageService) DeleteQuestions(ids []int64) error {
 		args[i] = id
 	}
 
-	// 构建SQL语句
 	query := fmt.Sprintf("DELETE FROM questions WHERE id IN (%s)", strings.Join(placeholders, ","))
 
-	// 执行删除
 	result, err := s.DB.Exec(query, args...)
 	if err != nil {
 		return fmt.Errorf("删除题目失败: %w", err)
 	}
 
-	// 检查是否有行被删除
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("获取影响行数失败: %w", err)

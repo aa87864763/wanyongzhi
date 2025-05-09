@@ -271,7 +271,6 @@ func (c *AIClient) callDeepseekAPIBatch(prompt string) (*models.AIBatchResponse,
 
 // 解析批量模型返回的内容为题目数据数组
 func parseBatchQuestionContent(content string) (*models.AIBatchResponse, error) {
-	// 处理可能的JSON格式问题
 	content = strings.TrimSpace(content)
 	if strings.HasPrefix(content, "```json") {
 		content = strings.TrimPrefix(content, "```json")
@@ -286,30 +285,23 @@ func parseBatchQuestionContent(content string) (*models.AIBatchResponse, error) 
 	var batchResponse models.AIBatchResponse
 	err := json.Unmarshal([]byte(content), &batchResponse)
 	if err != nil {
-		// 查找questions数组起始
 		questionsStart := strings.Index(content, "\"questions\"")
 		if questionsStart >= 0 {
-			// 构造有效的JSON包装
 			fixedContent := "{" + content[questionsStart:] + "}"
 			if err := json.Unmarshal([]byte(fixedContent), &batchResponse); err != nil {
-				// 如果仍然失败，尝试其他修复方法
 				return extractQuestionsFromText(content)
 			}
 		} else {
-			// 尝试从文本中提取问题
 			return extractQuestionsFromText(content)
 		}
 	}
 
-	// 验证数据
 	if len(batchResponse.Questions) == 0 {
 		return nil, fmt.Errorf("API返回的题目数组为空")
 	}
 
-	// 处理每个题目中的代码转义问题
 	for i := range batchResponse.Questions {
 		if batchResponse.Questions[i].Code != "" {
-			// 修复代码中的转义字符
 			batchResponse.Questions[i].Code = strings.ReplaceAll(batchResponse.Questions[i].Code, "\\n", "\n")
 			batchResponse.Questions[i].Code = strings.ReplaceAll(batchResponse.Questions[i].Code, "\\t", "\t")
 			batchResponse.Questions[i].Code = strings.ReplaceAll(batchResponse.Questions[i].Code, "\\\"", "\"")
@@ -322,15 +314,12 @@ func parseBatchQuestionContent(content string) (*models.AIBatchResponse, error) 
 
 // 从文本中提取问题数组
 func extractQuestionsFromText(content string) (*models.AIBatchResponse, error) {
-	// 尝试查找可能的JSON数组
 	arrayStart := strings.Index(content, "[")
 	arrayEnd := strings.LastIndex(content, "]")
 
 	if arrayStart >= 0 && arrayEnd > arrayStart {
-		// 提取可能的JSON数组
 		jsonArray := content[arrayStart : arrayEnd+1]
 
-		// 尝试解析为题目数组
 		var questions []models.AIQuestion
 		if err := json.Unmarshal([]byte(jsonArray), &questions); err != nil {
 			return nil, fmt.Errorf("解析JSON数组失败: %w", err)

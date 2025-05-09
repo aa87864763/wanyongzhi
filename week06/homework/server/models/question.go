@@ -56,7 +56,7 @@ type AIQuestion struct {
 	Title   string   `json:"title"`
 	Options []string `json:"options"`
 	Right   []int    `json:"right"`
-	Code    string   `json:"code,omitempty"` // 用于编程题的代码
+	Code    string   `json:"code,omitempty"`
 }
 
 // 批量生成题目响应
@@ -69,7 +69,7 @@ type AIResponse struct {
 	Title  string   `json:"title"`
 	Answer []string `json:"answer"`
 	Right  []int    `json:"right"`
-	Code   string   `json:"code,omitempty"` // 用于编程题的代码
+	Code   string   `json:"code,omitempty"`
 }
 
 // 存储在数据库中的完整问题数据
@@ -89,7 +89,7 @@ type QuestionData struct {
 type HTTPResponse struct {
 	Code  int         `json:"code"`
 	Msg   string      `json:"msg"`
-	AIRes interface{} `json:"aiRes,omitempty"` // 可以是单个AIResponse或[]AIResponse
+	AIRes interface{} `json:"aiRes,omitempty"`
 }
 
 // 题目查询请求

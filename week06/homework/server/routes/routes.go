@@ -13,10 +13,7 @@ func SetupRoutes(r *gin.Engine, questionController *controllers.QuestionControll
 	// 问题相关路由
 	questions := api.Group("/questions")
 	{
-		// 生成题目
-		questions.POST("/create", questionController.CreateQuestion)
-
-		// 新增接口
+		questions.POST("/create", questionController.CreateQuestion)    // 生成题目
 		questions.GET("/list", questionController.ListQuestions)        // 查询题目列表
 		questions.POST("/add", questionController.AddQuestion)          // 手动添加题目
 		questions.PUT("/edit/:id", questionController.EditQuestion)     // 编辑题目
