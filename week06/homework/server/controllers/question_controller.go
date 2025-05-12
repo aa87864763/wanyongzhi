@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"question-generator/models"
 	"question-generator/services"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +29,47 @@ func NewQuestionController(aiClient *services.AIClient, storage *services.Storag
 
 // 创建新问题的处理器
 func (c *QuestionController) CreateQuestion(ctx *gin.Context) {
+	body, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+			Code: -1,
+			Msg:  "读取请求体失败: " + err.Error(),
+		})
+		return
+	}
+
+	// 恢复请求体以供后续绑定使用
+	ctx.Request.Body = io.NopCloser(strings.NewReader(string(body)))
+
+	// 先解析为map检查未知字段
+	var rawRequest map[string]interface{}
+	if err := json.Unmarshal(body, &rawRequest); err != nil {
+		ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+			Code: -1,
+			Msg:  "无效的JSON格式: " + err.Error(),
+		})
+		return
+	}
+
+	// 检查是否存在未知字段
+	validFields := map[string]bool{
+		"model":      true,
+		"language":   true,
+		"type":       true,
+		"difficulty": true,
+		"count":      true,
+	}
+
+	for field := range rawRequest {
+		if !validFields[field] {
+			ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+				Code: -1,
+				Msg:  fmt.Sprintf("不支持的参数: '%s'", field),
+			})
+			return
+		}
+	}
+
 	// 解析请求到结构体
 	var req models.QuestionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -50,6 +94,20 @@ func (c *QuestionController) CreateQuestion(ctx *gin.Context) {
 			Msg:  "生成题目失败: " + err.Error(),
 		})
 		return
+	}
+
+	// 处理每个题目的类型一致性
+	for i := range questionsList {
+		requestedProgrammingQuestion := req.GetQuestionType() == models.Programming
+		generatedProgrammingQuestion := len(questionsList[i].AIRes.Answer) == 0 || questionsList[i].AIRes.Code != ""
+
+		if requestedProgrammingQuestion != generatedProgrammingQuestion {
+			if generatedProgrammingQuestion {
+				questionsList[i].AIReq.Type = models.Programming
+			} else {
+				questionsList[i].AIRes.Code = ""
+			}
+		}
 	}
 
 	// 提取AIRes对象组成数组
@@ -133,6 +191,36 @@ func (c *QuestionController) AddQuestion(ctx *gin.Context) {
 		return
 	}
 
+	// 验证选择题的选项和答案
+	if data.AIReq.Type != models.Programming {
+		if len(data.AIRes.Answer) < 2 {
+			ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+				Code: -1,
+				Msg:  "选择题至少需要2个选项",
+			})
+			return
+		}
+
+		if len(data.AIRes.Right) == 0 {
+			ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+				Code: -1,
+				Msg:  "选择题必须指定正确答案",
+			})
+			return
+		}
+
+		// 验证答案索引是否有效
+		for _, idx := range data.AIRes.Right {
+			if idx < 0 || idx >= len(data.AIRes.Answer) {
+				ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+					Code: -1,
+					Msg:  fmt.Sprintf("无效的答案索引: %d", idx),
+				})
+				return
+			}
+		}
+	}
+
 	// 保存题目
 	id, err := c.storage.AddQuestion(&data)
 	if err != nil {
@@ -189,6 +277,36 @@ func (c *QuestionController) EditQuestion(ctx *gin.Context) {
 			Msg:  "题目标题不能为空",
 		})
 		return
+	}
+
+	// 验证选择题的选项和答案
+	if data.AIReq.Type != models.Programming {
+		if len(data.AIRes.Answer) < 2 {
+			ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+				Code: -1,
+				Msg:  "选择题至少需要2个选项",
+			})
+			return
+		}
+
+		if len(data.AIRes.Right) == 0 {
+			ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+				Code: -1,
+				Msg:  "选择题必须指定正确答案",
+			})
+			return
+		}
+
+		// 验证答案索引是否有效
+		for _, idx := range data.AIRes.Right {
+			if idx < 0 || idx >= len(data.AIRes.Answer) {
+				ctx.JSON(http.StatusBadRequest, models.HTTPResponse{
+					Code: -1,
+					Msg:  fmt.Sprintf("无效的答案索引: %d", idx),
+				})
+				return
+			}
+		}
 	}
 
 	// 更新题目

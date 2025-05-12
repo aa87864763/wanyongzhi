@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -27,8 +26,7 @@ const (
 type ModelProvider string
 
 const (
-	Deepseek ModelProvider = "deepseek"
-	Tongyi   ModelProvider = "tongyi"
+	Tongyi ModelProvider = "tongyi"
 )
 
 // 编程语言参数
@@ -112,46 +110,6 @@ type QuestionDeleteRequest struct {
 	IDs []int64 `json:"ids" binding:"required"`
 }
 
-// 验证模型是否有效
-func ValidateModelProvider(model ModelProvider) error {
-	switch model {
-	case Deepseek, Tongyi, "":
-		return nil
-	default:
-		return fmt.Errorf("无效的模型: '%s'，只支持'deepseek' 或 'tongyi'", model)
-	}
-}
-
-// 验证编程语言是否有效
-func ValidateLanguage(lang ProgrammingLanguage) error {
-	switch lang {
-	case Go, Java, Python, CPP, JavaScript, "":
-		return nil
-	default:
-		return fmt.Errorf("无效的编程语言: '%s'，支持的语言有 'go', 'java', 'python', 'c++', 'javascript'", lang)
-	}
-}
-
-// 验证题目类型是否有效
-func ValidateQuestionType(qType QuestionType) error {
-	switch qType {
-	case SingleChoice, MultiChoice, Programming, 0:
-		return nil
-	default:
-		return fmt.Errorf("无效的题目类型: %d，只支持 1(单选题)、2(多选题) 或 3(编程题)", qType)
-	}
-}
-
-// 验证题目难度是否有效
-func ValidateDifficulty(difficulty QuestionDifficulty) error {
-	switch difficulty {
-	case Easy, Medium, Hard, 0:
-		return nil
-	default:
-		return fmt.Errorf("无效的题目难度: %d，只支持 1(简单)、2(中等) 或 3(困难)", difficulty)
-	}
-}
-
 // 获取模型名称，处理默认值
 func (r *QuestionRequest) GetModelName() ModelProvider {
 	if r.Model == "" {
@@ -190,33 +148,4 @@ func (r *QuestionRequest) GetCount() int {
 		return 1
 	}
 	return r.Count
-}
-
-// 验证请求参数是否有效
-func (r *QuestionRequest) Validate() error {
-	if r.Model != "" {
-		if err := ValidateModelProvider(r.Model); err != nil {
-			return err
-		}
-	}
-
-	if r.Language != "" {
-		if err := ValidateLanguage(r.Language); err != nil {
-			return err
-		}
-	}
-
-	if r.Type != 0 {
-		if err := ValidateQuestionType(r.Type); err != nil {
-			return err
-		}
-	}
-
-	if r.Difficulty != 0 {
-		if err := ValidateDifficulty(r.Difficulty); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
