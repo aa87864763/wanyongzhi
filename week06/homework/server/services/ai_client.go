@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"question-generator/config"
 	"question-generator/models"
-	"regexp"
 	"strings"
 	"time"
 
@@ -16,27 +14,20 @@ import (
 
 // 负责与模型官网通信
 type AIClient struct {
-	config         *config.Configuration
-	deepseekClient *openai.Client
-	tongyiClient   *openai.Client
+	config       *config.Configuration
+	tongyiClient *openai.Client
 }
 
 // 创建新的模型客户端
 func NewAIClient(config *config.Configuration) *AIClient {
-
-	deepseekConfig := openai.DefaultConfig(config.DeepseekAPIKey)
-	deepseekConfig.BaseURL = config.DeepseekAPIURL
-
 	tongyiConfig := openai.DefaultConfig(config.QwenAPIKey)
 	tongyiConfig.BaseURL = config.QwenAPIURL
 
-	deepseekClient := openai.NewClientWithConfig(deepseekConfig)
 	tongyiClient := openai.NewClientWithConfig(tongyiConfig)
 
 	return &AIClient{
-		config:         config,
-		deepseekClient: deepseekClient,
-		tongyiClient:   tongyiClient,
+		config:       config,
+		tongyiClient: tongyiClient,
 	}
 }
 
@@ -46,62 +37,32 @@ func (c *AIClient) BatchGenerateQuestions(req *models.QuestionRequest, count int
 		count = 1
 	}
 
-	// 限制最大生成数量
 	if count > 10 {
 		count = 10
 	}
 
-	// 记录开始时间
 	startTime := time.Now()
 
-	// 构建生成的提示语
 	prompt := buildBatchPrompt(req, count)
 
-	var response *models.AIBatchResponse
-	var err error
-	var status string
-
-	// 根据请求选择合适的AI服务
-	switch req.GetModelName() {
-	case models.Tongyi:
-		if c.config.QwenAPIKey == "" {
-			return nil, fmt.Errorf("Qwen API密钥未配置")
-		}
-		response, err = c.callTongyiAPIBatch(prompt)
-		status = string(req.GetModelName())
-
-	case models.Deepseek:
-		if c.config.DeepseekAPIKey == "" {
-			return nil, fmt.Errorf("Deepseek API密钥未配置")
-		}
-		response, err = c.callDeepseekAPIBatch(prompt)
-		status = "deepseek"
-
-	default:
-		return nil, fmt.Errorf("不支持的模型类型: %s", req.GetModelName())
+	if c.config.QwenAPIKey == "" {
+		return nil, fmt.Errorf("Qwen API密钥未配置")
 	}
-
-	// 记录结束时间
-	endTime := time.Now()
-	costTime := int(endTime.Sub(startTime).Seconds())
-
+	response, err := c.callTongyiAPIBatch(prompt)
 	if err != nil {
 		return nil, err
 	}
 
-	// 检查返回的问题数量是否与要求一致
-	if len(response.Questions) != count {
-		log.Printf("警告: 请求生成%d个问题，但实际返回了%d个问题", count, len(response.Questions))
-	}
+	endTime := time.Now()
+	costTime := int(endTime.Sub(startTime).Seconds())
 
-	// 构建返回结果
 	results := make([]models.QuestionData, 0, len(response.Questions))
 	for _, question := range response.Questions {
 		questionData := models.QuestionData{
 			AIStartTime: startTime,
 			AIEndTime:   endTime,
 			AICostTime:  costTime,
-			AIStatus:    status,
+			AIStatus:    string(models.Tongyi),
 			AIReq:       *req,
 			AIRes: models.AIResponse{
 				Title:  question.Title,
@@ -118,7 +79,7 @@ func (c *AIClient) BatchGenerateQuestions(req *models.QuestionRequest, count int
 	return results, nil
 }
 
-// 构建批量生成的提示语
+// 构建提示语
 func buildBatchPrompt(req *models.QuestionRequest, count int) string {
 	var questionType string
 	switch req.GetQuestionType() {
@@ -142,7 +103,6 @@ func buildBatchPrompt(req *models.QuestionRequest, count int) string {
 
 	language := string(req.GetLanguage())
 
-	// 构建提示语
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("生成%d道%s难度，关于%s编程语言的%s", count, difficultyLevel, language, questionType))
 	sb.WriteString("。\n\n")
@@ -195,20 +155,20 @@ func buildBatchPrompt(req *models.QuestionRequest, count int) string {
 	return sb.String()
 }
 
-// 批量调用tongyi API
+// 调用tongyi API
 func (c *AIClient) callTongyiAPIBatch(prompt string) (*models.AIBatchResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 
 	chatReq := openai.ChatCompletionRequest{
-		Model: "qwen-max",
+		Model: "qwen-turbo",
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,
 				Content: prompt,
 			},
 		},
-		Temperature: 0.3,
+		Temperature: 0.1,
 		MaxTokens:   8000,
 		TopP:        0.95,
 	}
@@ -226,43 +186,6 @@ func (c *AIClient) callTongyiAPIBatch(prompt string) (*models.AIBatchResponse, e
 	content := resp.Choices[0].Message.Content
 	if content == "" {
 		return nil, fmt.Errorf("通义API返回的内容为空")
-	}
-
-	// 解析内容为题目对象数组
-	return parseBatchQuestionContent(content)
-}
-
-// 批量调用deepseek API
-func (c *AIClient) callDeepseekAPIBatch(prompt string) (*models.AIBatchResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
-
-	chatReq := openai.ChatCompletionRequest{
-		Model: "deepseek-chat",
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: prompt,
-			},
-		},
-		Temperature: 0.3,
-		MaxTokens:   8000,
-		TopP:        0.95,
-	}
-
-	resp, err := c.deepseekClient.CreateChatCompletion(ctx, chatReq)
-	if err != nil {
-		return nil, fmt.Errorf("发送批量请求到Deepseek API失败: %w", err)
-	}
-
-	if len(resp.Choices) == 0 {
-		return nil, fmt.Errorf("Deepseek API响应没有包含结果")
-	}
-
-	// 提取内容
-	content := resp.Choices[0].Message.Content
-	if content == "" {
-		return nil, fmt.Errorf("Deepseek API返回的内容为空")
 	}
 
 	// 解析内容为题目对象数组
@@ -288,11 +211,12 @@ func parseBatchQuestionContent(content string) (*models.AIBatchResponse, error) 
 		questionsStart := strings.Index(content, "\"questions\"")
 		if questionsStart >= 0 {
 			fixedContent := "{" + content[questionsStart:] + "}"
-			if err := json.Unmarshal([]byte(fixedContent), &batchResponse); err != nil {
-				return extractQuestionsFromText(content)
+			err = json.Unmarshal([]byte(fixedContent), &batchResponse)
+			if err != nil {
+				return nil, fmt.Errorf("无法解析API返回的JSON内容: %w", err)
 			}
 		} else {
-			return extractQuestionsFromText(content)
+			return nil, fmt.Errorf("无法解析API返回的内容，未找到questions字段: %w", err)
 		}
 	}
 
@@ -300,49 +224,5 @@ func parseBatchQuestionContent(content string) (*models.AIBatchResponse, error) 
 		return nil, fmt.Errorf("API返回的题目数组为空")
 	}
 
-	for i := range batchResponse.Questions {
-		if batchResponse.Questions[i].Code != "" {
-			batchResponse.Questions[i].Code = strings.ReplaceAll(batchResponse.Questions[i].Code, "\\n", "\n")
-			batchResponse.Questions[i].Code = strings.ReplaceAll(batchResponse.Questions[i].Code, "\\t", "\t")
-			batchResponse.Questions[i].Code = strings.ReplaceAll(batchResponse.Questions[i].Code, "\\\"", "\"")
-			batchResponse.Questions[i].Code = strings.ReplaceAll(batchResponse.Questions[i].Code, "\\\\", "\\")
-		}
-	}
-
 	return &batchResponse, nil
-}
-
-// 从文本中提取问题数组
-func extractQuestionsFromText(content string) (*models.AIBatchResponse, error) {
-	arrayStart := strings.Index(content, "[")
-	arrayEnd := strings.LastIndex(content, "]")
-
-	if arrayStart >= 0 && arrayEnd > arrayStart {
-		jsonArray := content[arrayStart : arrayEnd+1]
-
-		var questions []models.AIQuestion
-		if err := json.Unmarshal([]byte(jsonArray), &questions); err != nil {
-			return nil, fmt.Errorf("解析JSON数组失败: %w", err)
-		}
-
-		return &models.AIBatchResponse{Questions: questions}, nil
-	}
-
-	// 这里先尝试识别并提取单个题目对象
-	var questions []models.AIQuestion
-	objPattern := regexp.MustCompile(`\{[^{}]*"title"[^{}]*\}`)
-	matches := objPattern.FindAllString(content, -1)
-
-	for _, match := range matches {
-		var question models.AIQuestion
-		if err := json.Unmarshal([]byte(match), &question); err == nil && question.Title != "" {
-			questions = append(questions, question)
-		}
-	}
-
-	if len(questions) > 0 {
-		return &models.AIBatchResponse{Questions: questions}, nil
-	}
-
-	return nil, fmt.Errorf("无法从内容中提取题目: %s", content)
 }
